@@ -146,7 +146,7 @@ export default function AdminDashboard() {
   return (
     <>
       <Navigation />
-      <div className="min-h-screen bg-background">
+      <div className="flex flex-col h-screen bg-background overflow-hidden">
       {/* Header */}
       <div className="border-b border-border sticky top-0 bg-background/95 backdrop-blur-sm z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -211,17 +211,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto bg-muted/30">
         {showMapView ? (
           // Map View with Collection Manager
-          <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
-            <div className="lg:col-span-2 h-full rounded-lg overflow-hidden border border-border">
+          <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 min-h-[600px]">
+            <div className="lg:col-span-2 h-[500px] lg:h-full rounded-xl overflow-hidden border border-border shadow-inner bg-card">
               <AdminMapView 
                 memories={memories}
                 onMemorySelect={setSelectedMapMemory}
               />
             </div>
-            <div className="bg-card rounded-lg border border-border flex flex-col">
+            <div className="bg-card rounded-xl border border-border flex flex-col shadow-sm overflow-hidden h-[500px] lg:h-full">
               <CollectionManager
                 collections={collections}
                 selectedMemory={selectedMapMemory}
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
           </div>
         ) : (
           // Table View
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-full">
             {activeTab === 'memories' ? (
               <>
                 {/* Stats */}
