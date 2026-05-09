@@ -15,7 +15,17 @@ export function useAuth() {
       setLoading(false);
 
       if (user) {
-        // Log login to Realtime Database
+        // Update persistent user profile
+        const profileRef = ref(rtdb, `profiles/${user.uid}`);
+        set(profileRef, {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          lastSeen: serverTimestamp(),
+        });
+
+        // Log login session
         const loginLogRef = ref(rtdb, 'access_logs');
         push(loginLogRef, {
           uid: user.uid,

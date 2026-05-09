@@ -1,6 +1,4 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Memory } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { X, Upload, Loader2, MapPin } from 'lucide-react';
@@ -14,11 +12,23 @@ import {
   validateLocation,
   sanitizeText 
 } from '@/lib/validation';
+import dynamic from 'next/dynamic';
+import 'leaflet/dist/leaflet.css';
 
-interface MemoryFormProps {
-  initialMemory?: Memory;
-  onSubmit: (memory: Memory) => void;
-  onCancel: () => void;
+// Dynamically import Leaflet components to avoid SSR issues
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const useMapEvents = dynamic(() => import('react-leaflet').then(mod => mod.useMapEvents), { ssr: false } as any) as any;
+
+function LocationMarker({ position, setPosition }: { position: [number, number], setPosition: (pos: [number, number]) => void }) {
+  const mapEvents = useMapEvents({
+    dblclick(e: any) {
+      setPosition([e.latlng.lat, e.latlng.lng]);
+    },
+  });
+
+  return position ? <Marker position={position} /> : null;
 }
 
 export default function MemoryForm({
@@ -26,6 +36,19 @@ export default function MemoryForm({
   onSubmit,
   onCancel,
 }: MemoryFormProps) {
+  useEffect(() => {
+    // Initialize Leaflet icons on client side
+    const initLeaflet = async () => {
+      const L = (await import('leaflet')).default;
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      });
+    };
+    initLeaflet();
+  }, []);
   const [formData, setFormData] = useState<Partial<Memory>>(
     initialMemory || {
       title: '',
@@ -360,42 +383,43 @@ export default function MemoryForm({
             )}
           </div>
 
-          {/* Manual coordinate override (optional) */}
-          <details className="border border-border rounded-lg p-4">
-            <summary className="cursor-pointer font-semibold text-foreground hover:text-primary">
-              Edit Coordinates Manually (Optional)
-            </summary>
-            <div className="mt-3 grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Longitude
-                </label>
-                <input
-                  type="number"
-                  name="coordinates.0"
-                  value={formData.coordinates?.[0] || 0}
-                  onChange={handleChange}
-                  step="0.0001"
-                  placeholder="-180 to 180"
-                  className="w-full px-4 py-2 rounded-lg bg-background border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          {/* Map Based Pinning */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-foreground">
+              <span className="flex items-center gap-2">
+                <MapPin size={18} className="text-[#00a82d]" /> Pin Location on Map *
+              </span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Double-click anywhere on the map to set the exact coordinates for this memory.
+            </p>
+            <div className="h-[300px] w-full rounded-2xl overflow-hidden border border-border shadow-inner bg-gray-50 relative z-0">
+              <MapContainer
+                center={(formData.coordinates && formData.coordinates[0] !== 0) ? [formData.coordinates[1], formData.coordinates[0]] : [20, 77]}
+                zoom={4}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <LocationMarker 
+                  position={[formData.coordinates?.[1] || 0, formData.coordinates?.[0] || 0]} 
+                  setPosition={(pos) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      coordinates: [pos[1], pos[0]]
+                    }));
+                  }} 
                 />
+              </MapContainer>
+            </div>
+            <div className="flex gap-4 text-xs font-mono text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border/50">
+              <div className="flex-1">
+                <span className="text-gray-400">Lat:</span> <span className="text-[#2d2e2e] font-bold">{(formData.coordinates?.[1] || 0).toFixed(6)}</span>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Latitude
-                </label>
-                <input
-                  type="number"
-                  name="coordinates.1"
-                  value={formData.coordinates?.[1] || 0}
-                  onChange={handleChange}
-                  step="0.0001"
-                  placeholder="-90 to 90"
-                  className="w-full px-4 py-2 rounded-lg bg-background border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+              <div className="flex-1">
+                <span className="text-gray-400">Lon:</span> <span className="text-[#2d2e2e] font-bold">{(formData.coordinates?.[0] || 0).toFixed(6)}</span>
               </div>
             </div>
-          </details>
+          </div>
 
           {/* Travel Date */}
           <div>

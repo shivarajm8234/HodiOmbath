@@ -71,6 +71,22 @@ export default function AdminDashboard() {
     }
   }, [user, loading, router]);
 
+  const [userProfiles, setUserProfiles] = useState<any[]>([]);
+
+  // Fetch Profiles
+  useEffect(() => {
+    if (user && user.email === 'shivarajmani2005@gmail.com') {
+      const profilesRef = ref(rtdb, 'profiles');
+      return onValue(profilesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setUserProfiles(Object.values(data));
+        }
+      });
+    }
+  }, [user]);
+
+  // Fetch access logs
   useEffect(() => {
     if (user && user.email === 'shivarajmani2005@gmail.com') {
       const logsRef = ref(rtdb, 'access_logs');
@@ -389,8 +405,8 @@ export default function AdminDashboard() {
             ) : (
               <div className="bg-card rounded-lg border border-border overflow-hidden">
                 <div className="p-6 border-b border-border">
-                  <h2 className="text-xl font-bold text-foreground">User Access Logs</h2>
-                  <p className="text-sm text-muted-foreground">Real-time tracking of users accessing the system</p>
+                  <h2 className="text-xl font-bold text-foreground">Registered Users</h2>
+                  <p className="text-sm text-muted-foreground">Comprehensive list of users who have signed into Hodi Ombath</p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -398,25 +414,31 @@ export default function AdminDashboard() {
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">User</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Last Seen</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Last Active</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Role</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {userLogs.map((log, idx) => (
+                      {userProfiles.map((profile, idx) => (
                         <tr key={idx} className="hover:bg-muted/50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
-                              <img src={log.photoURL} alt="" className="w-8 h-8 rounded-full" />
-                              <span className="font-medium text-foreground">{log.displayName}</span>
+                              <img src={profile.photoURL} alt="" className="w-8 h-8 rounded-full" />
+                              <span className="font-medium text-foreground">{profile.displayName}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{log.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{profile.email}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                            {new Date(log.timestamp).toLocaleString()}
+                            {profile.lastSeen ? new Date(profile.lastSeen).toLocaleString() : 'Never'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-green-500/20 text-green-500 uppercase">Online</span>
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                              profile.email === 'shivarajmani2005@gmail.com' 
+                              ? 'bg-primary/20 text-primary' 
+                              : 'bg-blue-500/20 text-blue-500'
+                            }`}>
+                              {profile.email === 'shivarajmani2005@gmail.com' ? 'Admin' : 'User'}
+                            </span>
                           </td>
                         </tr>
                       ))}
