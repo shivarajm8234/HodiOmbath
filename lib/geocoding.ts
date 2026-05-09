@@ -136,22 +136,17 @@ export function extractGoogleDriveImageUrl(driveLink: string): string | null {
       return null;
     }
 
+    // Flexible regex to capture file ID from various Drive URL formats
     let fileId = '';
-
-    if (driveLink.includes('/d/')) {
-      // Format: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
-      const match = driveLink.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match) fileId = match[1];
-    } else if (driveLink.includes('id=')) {
-      // Format: https://drive.google.com/file?id=FILE_ID
-      const match = driveLink.match(/id=([a-zA-Z0-9_-]+)/);
-      if (match) fileId = match[1];
+    const idMatch = driveLink.match(/([a-zA-Z0-9_-]{25,})/);
+    if (idMatch) {
+      fileId = idMatch[0];
     }
 
     // Validate file ID format
     if (fileId && GOOGLE_DRIVE_FILE_ID_REGEX.test(fileId)) {
-      // Use the more reliable googleusercontent format for embedding
-      return `https://lh3.googleusercontent.com/d/${fileId}`;
+      // Use the most reliable format for public "Anyone with the link" files
+      return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
     }
 
     console.error('[v0] Invalid Google Drive file ID format');

@@ -15,6 +15,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
+      // Set flag to show storyboard on the home page
+      sessionStorage.setItem('justLoggedIn', 'true');
       router.push("/");
     }
   }, [user, router]);

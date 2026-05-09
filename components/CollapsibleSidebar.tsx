@@ -143,11 +143,10 @@ export default function CollapsibleSidebar({
                 <div className="flex flex-wrap gap-2 justify-center">
                   <button
                     onClick={() => setFilterMood(null)}
-                    className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                      filterMood === null
+                    className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${filterMood === null
                         ? 'bg-[#00a82d] text-white shadow-lg shadow-[#00a82d]/20'
                         : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     All
                   </button>
@@ -155,11 +154,10 @@ export default function CollapsibleSidebar({
                     <button
                       key={mood}
                       onClick={() => setFilterMood(mood)}
-                      className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider capitalize transition-all ${
-                        filterMood === mood
+                      className={`px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider capitalize transition-all ${filterMood === mood
                           ? 'bg-[#00a82d] text-white shadow-lg shadow-[#00a82d]/20'
                           : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       {mood}
                     </button>
@@ -197,7 +195,7 @@ export default function CollapsibleSidebar({
 
               {/* Stats footer */}
               <div className="p-8 border-t border-gray-100 bg-white">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 rounded-2xl bg-gray-50">
                     <div className="flex items-center justify-center gap-1.5 text-gray-400 mb-1">
                       <BarChart3 size={14} />
@@ -211,15 +209,6 @@ export default function CollapsibleSidebar({
                       <span className="text-[10px] font-bold uppercase tracking-widest">Globes</span>
                     </div>
                     <span className="text-xl font-bold text-[#2d2e2e]">{new Set(memories.map(m => m.location?.country)).size}</span>
-                  </div>
-                  <div className="text-center p-3 rounded-2xl bg-gray-50">
-                    <div className="flex items-center justify-center gap-1.5 text-gray-400 mb-1">
-                      <Star size={14} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Rating</span>
-                    </div>
-                    <span className="text-xl font-bold text-[#2d2e2e]">
-                      {(memories.reduce((sum, m) => sum + m.rating, 0) / memories.length).toFixed(1)}
-                    </span>
                   </div>
                 </div>
               </div>

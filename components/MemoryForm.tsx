@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Memory } from '@/lib/types';
 import { motion } from 'framer-motion';
-import { X, Upload, Loader2, MapPin } from 'lucide-react';
+import { X, Upload, Loader2, MapPin, Shield } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { geocodePlace, reverseGeocode, extractGoogleDriveImageUrl } from '@/lib/geocoding';
-import { 
-  validateTitle, 
-  validateDescription, 
-  validateTags, 
-  validateCoordinates, 
+import {
+  validateTitle,
+  validateDescription,
+  validateTags,
+  validateCoordinates,
   validateRating,
   validateLocation,
-  sanitizeText 
+  sanitizeText
 } from '@/lib/validation';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
@@ -29,6 +30,9 @@ export default function MemoryForm({
   onSubmit,
   onCancel,
 }: MemoryFormProps) {
+  const { user } = useAuth();
+  const isAdmin = user?.email === 'shivarajmani2005@gmail.com';
+
   const [formData, setFormData] = useState<Partial<Memory>>(
     initialMemory || {
       title: '',
@@ -96,7 +100,7 @@ export default function MemoryForm({
 
     setIsGeocoding(true);
     setError(null);
-    
+
     try {
       const location = await geocodePlace(placeNameInput);
 
@@ -126,20 +130,37 @@ export default function MemoryForm({
 
   const handleAddDriveImage = () => {
     if (!driveLink.trim()) {
-      setError('Please enter a Google Drive link');
+      setError('Please enter at least one Google Drive link');
       return;
     }
 
-    const imageUrl = extractGoogleDriveImageUrl(driveLink);
-    if (imageUrl) {
+    // Split by comma, space, or newline and filter empty strings
+    const links = driveLink.split(/[,\s\n]+/).filter(l => l.trim().length > 0);
+    const newImages: string[] = [];
+    const invalidLinks: string[] = [];
+
+    links.forEach(link => {
+      const imageUrl = extractGoogleDriveImageUrl(link);
+      if (imageUrl) {
+        newImages.push(imageUrl);
+      } else {
+        invalidLinks.push(link);
+      }
+    });
+
+    if (newImages.length > 0) {
       setFormData((prev) => ({
         ...prev,
-        images: [...(prev.images || []), imageUrl],
+        images: [...(prev.images || []), ...newImages],
       }));
       setDriveLink('');
       setError(null);
-    } else {
-      setError('Invalid Google Drive link. Please ensure it\'s a valid shareable link.');
+
+      if (invalidLinks.length > 0) {
+        setError(`Added ${newImages.length} images, but ${invalidLinks.length} links were invalid.`);
+      }
+    } else if (invalidLinks.length > 0) {
+      setError('Invalid Google Drive link(s). Please ensure they are valid shareable links.');
     }
   };
 
@@ -206,6 +227,9 @@ export default function MemoryForm({
         travelDate: formData.travelDate || new Date().toISOString(),
         createdAt: initialMemory?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        status: initialMemory?.status || (user?.email === 'shivarajmani2005@gmail.com' ? 'approved' : 'pending'),
+        userId: initialMemory?.userId || user?.uid || 'anonymous',
+        userName: initialMemory?.userName || user?.displayName || user?.email?.split('@')[0] || 'Guest',
       };
 
       console.log("[MemoryForm] Submitting memory:", memory);
@@ -243,6 +267,21 @@ export default function MemoryForm({
           </button>
         </div>
 
+        {/* Moderation Notice for Users */}
+        {!isAdmin && !initialMemory && (
+          <div className="mx-6 mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+              <Shield size={20} className="text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-yellow-800 uppercase tracking-wider mb-0.5">Admin Review Required</p>
+              <p className="text-[11px] text-yellow-700 leading-tight">
+                Your memory will be shared with the community once an administrator has approved it.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <motion.div
@@ -275,13 +314,12 @@ export default function MemoryForm({
           {/* Description */}
           <div>
             <label className="block text-sm font-semibold text-foreground mb-2">
-              Description *
+              Description (Optional)
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              required
               placeholder="Tell the story of this memory..."
               rows={4}
               className="w-full px-4 py-2 rounded-lg bg-background border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -328,45 +366,45 @@ export default function MemoryForm({
             {(formData.location?.country ||
               formData.location?.city ||
               formData.coordinates?.[0]) && (
-              <div className="mt-4 p-4 bg-muted rounded-lg">
-                <h4 className="text-sm font-semibold text-foreground mb-2">
-                  Location Details (Auto-filled)
-                </h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Country</p>
-                    <p className="font-medium text-foreground">
-                      {formData.location?.country || '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">City</p>
-                    <p className="font-medium text-foreground">
-                      {formData.location?.city || '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">State</p>
-                    <p className="font-medium text-foreground">
-                      {formData.location?.state || '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">District</p>
-                    <p className="font-medium text-foreground">
-                      {formData.location?.district || '—'}
-                    </p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Coordinates</p>
-                    <p className="font-medium text-foreground">
-                      Lat: {formData.coordinates?.[1]?.toFixed(4) || '0'}, Lon:{' '}
-                      {formData.coordinates?.[0]?.toFixed(4) || '0'}
-                    </p>
+                <div className="mt-4 p-4 bg-muted rounded-lg">
+                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                    Location Details (Auto-filled)
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Country</p>
+                      <p className="font-medium text-foreground">
+                        {formData.location?.country || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">City</p>
+                      <p className="font-medium text-foreground">
+                        {formData.location?.city || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">State</p>
+                      <p className="font-medium text-foreground">
+                        {formData.location?.state || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">District</p>
+                      <p className="font-medium text-foreground">
+                        {formData.location?.district || '—'}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground">Coordinates</p>
+                      <p className="font-medium text-foreground">
+                        Lat: {formData.coordinates?.[1]?.toFixed(4) || '0'}, Lon:{' '}
+                        {formData.coordinates?.[0]?.toFixed(4) || '0'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Map Based Pinning */}
@@ -387,7 +425,7 @@ export default function MemoryForm({
                     ...prev,
                     coordinates: [pos[1], pos[0]]
                   }));
-                  
+
                   // Auto-fill location details based on map pin
                   try {
                     const locationData = await reverseGeocode(pos[0], pos[1]);

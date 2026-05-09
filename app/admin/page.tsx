@@ -248,7 +248,7 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
       <Navigation />
-      
+
       {/* Admin Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-md z-20 p-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -256,36 +256,36 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold text-foreground">Admin Control</h1>
             <p className="text-sm text-muted-foreground">Manage Realtime Data</p>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="flex bg-muted p-1 rounded-lg">
-              <button 
+              <button
                 onClick={() => setActiveTab('memories')}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'memories' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'}`}
               >
                 Data
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('users')}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'users' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'}`}
               >
                 Users
               </button>
-              <button 
+              <button
                 onClick={() => setActiveTab('logs')}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'logs' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'}`}
               >
                 Logs
               </button>
             </div>
-            
+
             <button
               onClick={() => setShowMapView(!showMapView)}
               className={`p-2 rounded-lg border transition-all ${showMapView ? 'bg-primary/10 border-primary text-primary' : 'bg-background border-border text-muted-foreground'}`}
             >
               <Map size={20} />
             </button>
-            
+
             <button
               onClick={() => { setEditingMemory(null); setShowForm(true); }}
               className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
@@ -306,15 +306,15 @@ export default function AdminDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 rounded-full shadow-2xl backdrop-blur-md border border-white/10"
-              style={{ 
-                backgroundColor: dbStatus.type === 'success' ? 'rgba(34, 197, 94, 0.9)' : 
-                               dbStatus.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 
-                               'rgba(59, 130, 246, 0.9)',
+              style={{
+                backgroundColor: dbStatus.type === 'success' ? 'rgba(34, 197, 94, 0.9)' :
+                  dbStatus.type === 'error' ? 'rgba(239, 68, 68, 0.9)' :
+                    'rgba(59, 130, 246, 0.9)',
                 color: 'white'
               }}
             >
-              {dbStatus.type === 'loading' ? <RotateCw className="animate-spin" size={18} /> : 
-               dbStatus.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              {dbStatus.type === 'loading' ? <RotateCw className="animate-spin" size={18} /> :
+                dbStatus.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
               <span className="font-semibold text-sm tracking-tight">{dbStatus.msg}</span>
             </motion.div>
           )}
@@ -365,7 +365,11 @@ export default function AdminDashboard() {
                           <tr key={m.id} className="hover:bg-muted/30 transition-colors group">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-4">
-                                <img src={m.images[0]} alt="" className="w-12 h-12 rounded-xl object-cover shadow-sm ring-1 ring-border" />
+                                <img
+                                  src={m.images && m.images[0] ? m.images[0] : `https://ui-avatars.com/api/?name=${encodeURIComponent(m.title)}&background=random`}
+                                  alt=""
+                                  className="w-12 h-12 rounded-xl object-cover shadow-sm ring-1 ring-border"
+                                />
                                 <span className="font-bold text-foreground">{m.title}</span>
                               </div>
                             </td>
@@ -403,10 +407,10 @@ export default function AdminDashboard() {
                           <tr key={idx} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setInspectingUser(p)}>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <img 
-                                  src={p.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName || p.email || 'U')}&background=random`} 
-                                  alt="" 
-                                  className="w-8 h-8 rounded-full ring-1 ring-border shadow-sm" 
+                                <img
+                                  src={p.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName || p.email || 'U')}&background=random`}
+                                  alt=""
+                                  className="w-8 h-8 rounded-full ring-1 ring-border shadow-sm"
                                 />
                                 <span className="font-bold text-foreground">{p.displayName || p.email?.split('@')[0] || 'Anonymous'}</span>
                               </div>
@@ -446,10 +450,10 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <img 
-                                  src={log.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(log.displayName || log.email || 'U')}&background=random`} 
-                                  alt="" 
-                                  className="w-6 h-6 rounded-full" 
+                                <img
+                                  src={log.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(log.displayName || log.email || 'U')}&background=random`}
+                                  alt=""
+                                  className="w-6 h-6 rounded-full"
                                 />
                                 <div>
                                   <p className="font-bold">{log.displayName || log.email?.split('@')[0] || 'Anonymous'}</p>
@@ -487,12 +491,12 @@ export default function AdminDashboard() {
       <AnimatePresence>
         {inspectingUser && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setInspectingUser(null)}
               className="fixed inset-0 bg-black/60 backdrop-blur-md z-[600] flex items-center justify-center p-4"
             >
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -509,7 +513,7 @@ export default function AdminDashboard() {
                   </div>
                   <button onClick={() => setInspectingUser(null)} className="p-2 hover:bg-muted rounded-full transition-colors"><X size={20} /></button>
                 </div>
-                
+
                 <div className="p-6 max-h-[60vh] overflow-y-auto">
                   <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Engagement History</h4>
                   {userActivity.length > 0 ? (
@@ -530,7 +534,7 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="p-4 bg-muted/10 text-center border-t border-border">
                   <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">System Intelligence Tracking Active</p>
                 </div>

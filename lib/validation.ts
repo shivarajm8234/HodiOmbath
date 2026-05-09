@@ -41,15 +41,13 @@ export function validateTitle(title: string): { valid: boolean; error?: string }
   return { valid: true };
 }
 
-// Validate memory description
+// Validate memory description (optional)
 export function validateDescription(description: string): { valid: boolean; error?: string } {
+  if (!description) return { valid: true };
   const sanitized = sanitizeText(description, MAX_DESCRIPTION_LENGTH);
   
-  if (!sanitized || sanitized.length === 0) {
-    return { valid: false, error: 'Description is required' };
-  }
-  if (sanitized.length < 10) {
-    return { valid: false, error: 'Description must be at least 10 characters' };
+  if (sanitized.length > 0 && sanitized.length < 5) {
+    return { valid: false, error: 'If provided, description must be at least 5 characters' };
   }
   
   return { valid: true };

@@ -144,11 +144,18 @@ export default function MemoryDetail({
 
             {/* Image carousel */}
             {memory.images.length > 0 && (
-              <div className="relative h-96 w-full bg-muted overflow-hidden">
+              <div className="relative h-96 w-full bg-[#050505] overflow-hidden flex items-center justify-center">
+                {/* Ambient Blurred Background */}
+                <img
+                  src={memory.images[0]}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30"
+                />
+                {/* Main Full Image */}
                 <img
                   src={memory.images[0]}
                   alt={memory.title}
-                  className="w-full h-full object-cover"
+                  className="relative z-10 max-w-full max-h-full object-contain"
                 />
               </div>
             )}
