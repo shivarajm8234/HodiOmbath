@@ -1,6 +1,6 @@
 import { Memory } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, MapPin, Star, Heart, MessageSquare, Send } from 'lucide-react';
+import { X, Calendar, MapPin, Star, Heart, MessageSquare, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { rtdb } from '@/lib/firebase';
 import { ref, push, onValue, serverTimestamp, set } from 'firebase/database';
@@ -23,6 +23,12 @@ export default function MemoryDetail({
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [views, setViews] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Reset index when memory changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [memory?.id]);
 
   useEffect(() => {
     if (isOpen && memory && user) {
@@ -146,17 +152,54 @@ export default function MemoryDetail({
             {memory.images.length > 0 && (
               <div className="relative h-96 w-full bg-[#050505] overflow-hidden flex items-center justify-center">
                 {/* Ambient Blurred Background */}
-                <img
-                  src={memory.images[0]}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30"
-                />
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={`blur-${currentImageIndex}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.3 }}
+                    exit={{ opacity: 0 }}
+                    src={memory.images[currentImageIndex]}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl"
+                  />
+                </AnimatePresence>
+                
+                {/* Navigation Buttons */}
+                {memory.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : memory.images.length - 1))}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/30 hover:bg-black/60 text-white rounded-full transition-all z-20 backdrop-blur-sm border border-white/10"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={() => setCurrentImageIndex((prev) => (prev < memory.images.length - 1 ? prev + 1 : 0))}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/30 hover:bg-black/60 text-white rounded-full transition-all z-20 backdrop-blur-sm border border-white/10"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                    
+                    {/* Index Indicator */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/40 backdrop-blur-md rounded-full text-[10px] font-bold text-white z-20 border border-white/10 tracking-widest uppercase">
+                      {currentImageIndex + 1} / {memory.images.length}
+                    </div>
+                  </>
+                )}
+
                 {/* Main Full Image */}
-                <img
-                  src={memory.images[0]}
-                  alt={memory.title}
-                  className="relative z-10 max-w-full max-h-full object-contain"
-                />
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={currentImageIndex}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.05 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    src={memory.images[currentImageIndex]}
+                    alt={memory.title}
+                    className="relative z-10 max-w-full max-h-full object-contain px-12"
+                  />
+                </AnimatePresence>
               </div>
             )}
 
@@ -218,7 +261,12 @@ export default function MemoryDetail({
                     {memory.images.map((img, idx) => (
                       <div
                         key={idx}
-                        className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                        className={`aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer transition-all ${
+                          currentImageIndex === idx 
+                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[0.98]' 
+                          : 'hover:opacity-80 grayscale-[0.3] hover:grayscale-0'
+                        }`}
+                        onClick={() => setCurrentImageIndex(idx)}
                       >
                         <img
                           src={img}
