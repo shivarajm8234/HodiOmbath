@@ -36,7 +36,7 @@ export default function MemoryCard({
     >
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         {/* Image */}
-        {memory.images.length > 0 ? (
+        {memory.images && memory.images.length > 0 ? (
           <div className="relative h-40 w-full overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
             <img
               src={memory.images[0]}
@@ -97,7 +97,7 @@ export default function MemoryCard({
           </div>
 
           {/* Tags */}
-          {memory.tags.length > 0 && (
+          {memory.tags && memory.tags.length > 0 && (
             <motion.div 
               className="mt-2.5 flex flex-wrap gap-1"
               initial={{ opacity: 0 }}

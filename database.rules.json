@@ -28,6 +28,10 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "user_activity": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     ".read": "auth != null",
     ".write": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'"
   }

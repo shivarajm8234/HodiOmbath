@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Memory } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { X, Upload, Loader2, MapPin } from 'lucide-react';
-import { geocodePlace, extractGoogleDriveImageUrl } from '@/lib/geocoding';
+import { geocodePlace, reverseGeocode, extractGoogleDriveImageUrl } from '@/lib/geocoding';
 import { 
   validateTitle, 
   validateDescription, 
@@ -49,7 +49,7 @@ export default function MemoryForm({
   );
 
   const [tagsInput, setTagsInput] = useState(
-    initialMemory?.tags.join(', ') || ''
+    initialMemory?.tags?.join(', ') || ''
   );
   const [placeNameInput, setPlaceNameInput] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -145,17 +145,22 @@ export default function MemoryForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[MemoryForm] handleSubmit triggered");
     setError(null);
 
     // Comprehensive validation using utility functions
+    console.log("[MemoryForm] Validating title:", formData.title);
     const titleValidation = validateTitle(formData.title || '');
     if (!titleValidation.valid) {
+      console.log("[MemoryForm] Title validation failed:", titleValidation.error);
       setError(titleValidation.error || 'Invalid title');
       return;
     }
 
+    console.log("[MemoryForm] Validating description");
     const descValidation = validateDescription(formData.description || '');
     if (!descValidation.valid) {
+      console.log("[MemoryForm] Description validation failed:", descValidation.error);
       setError(descValidation.error || 'Invalid description');
       return;
     }
@@ -203,9 +208,10 @@ export default function MemoryForm({
         updatedAt: new Date().toISOString(),
       };
 
+      console.log("[MemoryForm] Submitting memory:", memory);
       onSubmit(memory);
     } catch (err) {
-      console.error('[v0] Form submission error:', err);
+      console.error('[MemoryForm] Submission error:', err);
       setError('Failed to save memory. Please try again.');
     }
   };
@@ -376,11 +382,29 @@ export default function MemoryForm({
             <div className="h-[350px] w-full rounded-2xl overflow-hidden border border-border shadow-inner bg-gray-50 relative z-0">
               <LocationPickerMap
                 coordinates={formData.coordinates as [number, number] || [0, 0]}
-                setCoordinates={(pos) => {
+                setCoordinates={async (pos) => {
                   setFormData(prev => ({
                     ...prev,
                     coordinates: [pos[1], pos[0]]
                   }));
+                  
+                  // Auto-fill location details based on map pin
+                  try {
+                    const locationData = await reverseGeocode(pos[0], pos[1]);
+                    if (locationData) {
+                      setFormData(prev => ({
+                        ...prev,
+                        location: {
+                          country: locationData.country || prev.location?.country || '',
+                          state: locationData.state || prev.location?.state || '',
+                          district: locationData.district || prev.location?.district || '',
+                          city: locationData.city || prev.location?.city || '',
+                        }
+                      }));
+                    }
+                  } catch (err) {
+                    console.error("Reverse geocode failed:", err);
+                  }
                 }}
               />
 

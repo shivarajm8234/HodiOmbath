@@ -7,7 +7,7 @@ import CollectionManager from '@/components/CollectionManager';
 import { Memory, MemoryCollection } from '@/lib/types';
 import { mockMemories, mockCollections } from '@/lib/mockData';
 import MemoryForm from '@/components/MemoryForm';
-import { Plus, Edit2, Trash2, Eye, EyeOff, MapPin, Map, Shield, RotateCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, MapPin, Map, Shield, RotateCw, CheckCircle2, AlertCircle, X, Satellite } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { rtdb } from '@/lib/firebase';
 import { ref, onValue, set, remove, update } from 'firebase/database';
@@ -28,9 +28,11 @@ export default function AdminDashboard() {
   const [selectedMapMemory, setSelectedMapMemory] = useState<Memory | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showMapView, setShowMapView] = useState(false);
-  const [activeTab, setActiveTab] = useState<'memories' | 'users'>('memories');
+  const [activeTab, setActiveTab] = useState<'memories' | 'users' | 'logs'>('memories');
   const [userLogs, setUserLogs] = useState<any[]>([]);
   const [userProfiles, setUserProfiles] = useState<any[]>([]);
+  const [inspectingUser, setInspectingUser] = useState<any | null>(null);
+  const [userActivity, setUserActivity] = useState<any[]>([]);
   const [visibilityToggle, setVisibilityToggle] = useState<Set<string>>(new Set());
   const [dbStatus, setDbStatus] = useState<{ type: 'success' | 'error' | 'loading', msg: string } | null>(null);
 
@@ -44,7 +46,7 @@ export default function AdminDashboard() {
         setMemories(list);
         setVisibilityToggle(new Set(list.map(m => m.id)));
       } else {
-        setMemories(mockMemories);
+        setMemories([]);
       }
     });
     return () => unsubscribe();
@@ -58,7 +60,7 @@ export default function AdminDashboard() {
       if (data) {
         setCollections(Object.values(data) as MemoryCollection[]);
       } else {
-        setCollections(mockCollections);
+        setCollections([]);
       }
     });
     return () => unsubscribe();
@@ -76,10 +78,7 @@ export default function AdminDashboard() {
       const logsRef = ref(rtdb, 'access_logs');
       const logsUnsub = onValue(logsRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          const logs = Object.values(data).sort((a: any, b: any) => b.timestamp - a.timestamp);
-          setUserLogs(logs);
-        }
+        if (data) setUserLogs(Object.values(data).sort((a: any, b: any) => b.timestamp - a.timestamp));
       });
 
       return () => {
@@ -88,6 +87,19 @@ export default function AdminDashboard() {
       };
     }
   }, [user]);
+
+  // Fetch Activity for Inspected User
+  useEffect(() => {
+    if (inspectingUser) {
+      const activityRef = ref(rtdb, `user_activity/${inspectingUser.uid}`);
+      const unsub = onValue(activityRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) setUserActivity(Object.values(data).sort((a: any, b: any) => b.timestamp - a.timestamp));
+        else setUserActivity([]);
+      });
+      return () => unsub();
+    }
+  }, [inspectingUser]);
 
   // Auth Protection
   useEffect(() => {
@@ -107,27 +119,34 @@ export default function AdminDashboard() {
   );
 
   const handleCreateMemory = async (memory: Memory) => {
+    console.log("[Admin] Attempting to create memory:", memory);
     setDbStatus({ type: 'loading', msg: 'Creating memory...' });
     try {
-      await set(ref(rtdb, `memories/${memory.id}`), memory);
+      const memoryRef = ref(rtdb, `memories/${memory.id}`);
+      await set(memoryRef, memory);
+      console.log("[Admin] Memory created successfully");
       setDbStatus({ type: 'success', msg: 'Memory stored successfully!' });
       setShowForm(false);
       setTimeout(() => setDbStatus(null), 3000);
     } catch (error: any) {
-      console.error("Store error:", error);
+      console.error("[Admin] Create memory error:", error);
       setDbStatus({ type: 'error', msg: `Failed to store: ${error.message}` });
     }
   };
 
   const handleUpdateMemory = async (memory: Memory) => {
+    console.log("[Admin] Attempting to update memory:", memory.id);
     setDbStatus({ type: 'loading', msg: 'Updating memory...' });
     try {
-      await set(ref(rtdb, `memories/${memory.id}`), memory);
+      const memoryRef = ref(rtdb, `memories/${memory.id}`);
+      await set(memoryRef, memory);
+      console.log("[Admin] Memory updated successfully");
       setDbStatus({ type: 'success', msg: 'Memory updated successfully!' });
       setEditingMemory(null);
       setShowForm(false);
       setTimeout(() => setDbStatus(null), 3000);
     } catch (error: any) {
+      console.error("[Admin] Update memory error:", error);
       setDbStatus({ type: 'error', msg: `Update failed: ${error.message}` });
     }
   };
@@ -252,6 +271,12 @@ export default function AdminDashboard() {
               >
                 Users
               </button>
+              <button 
+                onClick={() => setActiveTab('logs')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'logs' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'}`}
+              >
+                Logs
+              </button>
             </div>
             
             <button
@@ -358,7 +383,7 @@ export default function AdminDashboard() {
                     </table>
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === 'users' ? (
                 <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xl">
                   <div className="p-6 border-b border-border">
                     <h2 className="text-xl font-bold">Registered Community</h2>
@@ -375,11 +400,15 @@ export default function AdminDashboard() {
                       </thead>
                       <tbody className="divide-y divide-border">
                         {userProfiles.map((p, idx) => (
-                          <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                          <tr key={idx} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setInspectingUser(p)}>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <img src={p.photoURL} alt="" className="w-8 h-8 rounded-full ring-1 ring-border" />
-                                <span className="font-bold text-foreground">{p.displayName}</span>
+                                <img 
+                                  src={p.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.displayName || p.email || 'U')}&background=random`} 
+                                  alt="" 
+                                  className="w-8 h-8 rounded-full ring-1 ring-border shadow-sm" 
+                                />
+                                <span className="font-bold text-foreground">{p.displayName || p.email?.split('@')[0] || 'Anonymous'}</span>
                               </div>
                             </td>
                             <td className="px-6 py-4 text-muted-foreground">{p.email}</td>
@@ -388,6 +417,48 @@ export default function AdminDashboard() {
                               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${p.email === 'shivarajmani2005@gmail.com' ? 'bg-primary/20 text-primary' : 'bg-blue-500/20 text-blue-500'}`}>
                                 {p.email === 'shivarajmani2005@gmail.com' ? 'Admin' : 'User'}
                               </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xl">
+                  <div className="p-6 border-b border-border">
+                    <h2 className="text-xl font-bold">Activity Logs</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-widest">
+                        <tr>
+                          <th className="px-6 py-4 text-left">Event</th>
+                          <th className="px-6 py-4 text-left">User</th>
+                          <th className="px-6 py-4 text-left">Timestamp</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {userLogs.map((log, idx) => (
+                          <tr key={idx} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setInspectingUser(log)}>
+                            <td className="px-6 py-4">
+                              <span className="px-2 py-1 bg-muted rounded text-[10px] font-bold uppercase tracking-tight">Login</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <img 
+                                  src={log.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(log.displayName || log.email || 'U')}&background=random`} 
+                                  alt="" 
+                                  className="w-6 h-6 rounded-full" 
+                                />
+                                <div>
+                                  <p className="font-bold">{log.displayName || log.email?.split('@')[0] || 'Anonymous'}</p>
+                                  <p className="text-[10px] text-muted-foreground">{log.email}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-muted-foreground">
+                              {new Date(log.timestamp).toLocaleString()}
                             </td>
                           </tr>
                         ))}
@@ -409,6 +480,63 @@ export default function AdminDashboard() {
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}
           />
+        )}
+      </AnimatePresence>
+
+      {/* User Activity Inspector Popup */}
+      <AnimatePresence>
+        {inspectingUser && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setInspectingUser(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[600] flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card border border-border w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
+              >
+                <div className="p-6 border-b border-border bg-muted/30 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img src={inspectingUser.photoURL} alt="" className="w-12 h-12 rounded-full border-2 border-primary/20" />
+                    <div>
+                      <h3 className="font-black text-foreground">{inspectingUser.displayName}</h3>
+                      <p className="text-xs text-muted-foreground">{inspectingUser.email}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setInspectingUser(null)} className="p-2 hover:bg-muted rounded-full transition-colors"><X size={20} /></button>
+                </div>
+                
+                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Engagement History</h4>
+                  {userActivity.length > 0 ? (
+                    <div className="space-y-3">
+                      {userActivity.map((act, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 rounded-2xl bg-muted/20 border border-border/50">
+                          <div className="p-2 bg-primary/10 rounded-xl text-primary"><Satellite size={14} /></div>
+                          <div>
+                            <p className="text-sm font-bold text-foreground">Viewed <span className="text-primary">"{act.memoryTitle}"</span></p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(act.timestamp).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground italic">No specific activities recorded yet.</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-4 bg-muted/10 text-center border-t border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase font-black tracking-tighter">System Intelligence Tracking Active</p>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

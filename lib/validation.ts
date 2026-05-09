@@ -123,12 +123,7 @@ export function validateLocation(location: any): { valid: boolean; error?: strin
     return { valid: false, error: 'Invalid location format' };
   }
 
-  const country = sanitizeText(location.country || '');
-  
-  if (!country || country.length === 0) {
-    return { valid: false, error: 'Country is required' };
-  }
-
+  // Country is no longer strictly required to unblock saving
   return { valid: true };
 }
 

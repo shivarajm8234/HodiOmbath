@@ -87,6 +87,37 @@ export async function geocodePlace(placeName: string): Promise<GeoLocation | nul
   }
 }
 
+export async function reverseGeocode(lat: number, lon: number): Promise<GeoLocation | null> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'HodiOmbath/1.0',
+        },
+      }
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const address = data.address || {};
+
+    return {
+      latitude: lat,
+      longitude: lon,
+      country: address.country || '',
+      state: address.state || address.province || '',
+      district: address.county || address.district || '',
+      city: address.city || address.town || address.village || '',
+      displayName: data.display_name || '',
+    };
+  } catch (error) {
+    console.error('[v0] Reverse geocoding error:', error);
+    return null;
+  }
+}
+
 // Validate file ID - only alphanumeric and hyphens
 const GOOGLE_DRIVE_FILE_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
 
@@ -119,8 +150,8 @@ export function extractGoogleDriveImageUrl(driveLink: string): string | null {
 
     // Validate file ID format
     if (fileId && GOOGLE_DRIVE_FILE_ID_REGEX.test(fileId)) {
-      // Return direct image URL with sanitized file ID
-      return `https://drive.google.com/uc?export=view&id=${fileId}`;
+      // Use the more reliable googleusercontent format for embedding
+      return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
 
     console.error('[v0] Invalid Google Drive file ID format');

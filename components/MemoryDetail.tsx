@@ -34,32 +34,53 @@ export default function MemoryDetail({
         timestamp: serverTimestamp(),
       });
 
+      // Record detailed user activity
+      const activityRef = push(ref(rtdb, `user_activity/${user.uid}`));
+      set(activityRef, {
+        type: 'view_memory',
+        memoryId: memory.id,
+        memoryTitle: memory.title,
+        timestamp: serverTimestamp(),
+      });
+
       // Listen for Likes
       const likesRef = ref(rtdb, `likes/${memory.id}`);
-      onValue(likesRef, (snapshot) => {
+      const likesUnsub = onValue(likesRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
           const likesCount = Object.keys(data).length;
           setLikes(likesCount);
           setHasLiked(Object.values(data).some((l: any) => l.uid === user.uid));
+        } else {
+          setLikes(0);
+          setHasLiked(false);
         }
       });
 
       // Listen for Comments
       const commentsRef = ref(rtdb, `comments/${memory.id}`);
-      onValue(commentsRef, (snapshot) => {
+      const commentsUnsub = onValue(commentsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
           setComments(Object.values(data).sort((a: any, b: any) => b.timestamp - a.timestamp));
+        } else {
+          setComments([]);
         }
       });
 
       // Listen for total views (count)
       const totalViewsRef = ref(rtdb, `views/${memory.id}`);
-      onValue(totalViewsRef, (snapshot) => {
+      const viewsUnsub = onValue(totalViewsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) setViews(Object.keys(data).length);
+        else setViews(0);
       });
+
+      return () => {
+        likesUnsub();
+        commentsUnsub();
+        viewsUnsub();
+      };
     }
   }, [isOpen, memory, user]);
 
@@ -129,12 +150,6 @@ export default function MemoryDetail({
                   alt={memory.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
-                  <span className="text-2xl">{moodEmoji[memory.mood]}</span>
-                  <span className="font-medium capitalize text-foreground">
-                    {memory.mood}
-                  </span>
-                </div>
               </div>
             )}
 
@@ -163,10 +178,6 @@ export default function MemoryDetail({
                       })}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Star size={16} fill="currentColor" className="text-primary" />
-                    <span>{memory.rating} / 5</span>
-                  </div>
                 </div>
               </div>
 
@@ -176,7 +187,7 @@ export default function MemoryDetail({
               </p>
 
               {/* Tags */}
-              {memory.tags.length > 0 && (
+              {memory.tags && memory.tags.length > 0 && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-foreground mb-3">Tags</h3>
                   <div className="flex flex-wrap gap-2">
@@ -193,7 +204,7 @@ export default function MemoryDetail({
               )}
 
               {/* Image gallery */}
-              {memory.images.length > 1 && (
+              {memory.images && memory.images.length > 1 && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-foreground mb-3">Photos</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -218,7 +229,7 @@ export default function MemoryDetail({
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-foreground">Location Details</h3>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Star size={12} fill="currentColor" /> {views} views</span>
+                    <span className="flex items-center gap-1">{views} views</span>
                     <button 
                       onClick={handleLike}
                       className={`flex items-center gap-1 transition-colors ${hasLiked ? 'text-red-500' : 'hover:text-red-500'}`}
@@ -246,7 +257,7 @@ export default function MemoryDetail({
               <div className="border-t border-border pt-6">
                 <div className="flex items-center gap-2 mb-4 text-foreground">
                   <MessageSquare size={20} className="text-primary" />
-                  <h3 className="font-semibold text-lg">System Log & Comments</h3>
+                  <h3 className="font-semibold text-lg">Comments</h3>
                 </div>
 
                 <form onSubmit={handleComment} className="flex gap-2 mb-6">

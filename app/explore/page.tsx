@@ -1,21 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import { Memory } from '@/lib/types';
-import { mockMemories, mockCollections } from '@/lib/mockData';
 import MemoryDetail from '@/components/MemoryDetail';
 import { Search, Grid3x3, List } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { rtdb } from '@/lib/firebase';
+import { ref, onValue } from 'firebase/database';
 
 export default function ExplorePage() {
-  const [memories] = useState<Memory[]>(mockMemories);
-  const [collections] = useState(mockCollections);
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [collections, setCollections] = useState<any[]>([]);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'collections'>('all');
   const [filterMood, setFilterMood] = useState<string | null>(null);
+
+  useEffect(() => {
+    const memoriesRef = ref(rtdb, 'memories');
+    const unsubscribe = onValue(memoriesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setMemories(Object.values(data) as Memory[]);
+      } else {
+        setMemories([]);
+      }
+    });
+
+    const collectionsRef = ref(rtdb, 'collections');
+    const collectionsUnsub = onValue(collectionsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setCollections(Object.values(data));
+      } else {
+        setCollections([]);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      collectionsUnsub();
+    };
+  }, []);
 
   const filteredMemories = memories.filter((memory) => {
     const matchesSearch =
@@ -167,7 +195,7 @@ export default function ExplorePage() {
                     {viewMode === 'grid' ? (
                       <div className="bg-card rounded-lg overflow-hidden border border-border hover:border-primary hover:shadow-lg transition-all cursor-pointer group">
                         {/* Image */}
-                        {memory.images.length > 0 && (
+                        {memory.images && memory.images.length > 0 && (
                           <div className="relative h-48 w-full overflow-hidden bg-muted">
                             <img
                               src={memory.images[0]}
@@ -203,7 +231,7 @@ export default function ExplorePage() {
                       </div>
                     ) : (
                       <div className="bg-card rounded-lg border border-border p-4 hover:border-primary hover:shadow-lg transition-all cursor-pointer flex gap-4">
-                        {memory.images.length > 0 && (
+                        {memory.images && memory.images.length > 0 && (
                           <img
                             src={memory.images[0]}
                             alt={memory.title}

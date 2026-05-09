@@ -35,7 +35,7 @@ export default function Home() {
         const memoriesList = Object.values(data) as Memory[];
         setMemories(memoriesList);
       } else {
-        setMemories(mockMemories);
+        setMemories([]);
       }
     });
     return () => unsubscribe();

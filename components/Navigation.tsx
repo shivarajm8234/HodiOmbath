@@ -37,10 +37,7 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand - Centered on all screens */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 group cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-[#00a82d] flex items-center justify-center shadow-lg shadow-[#00a82d]/20 group-hover:rotate-12 transition-transform">
-              <MapPin size={24} className="text-white" />
-            </div>
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center group cursor-pointer">
             <span className="text-2xl font-black text-[#2d2e2e] tracking-tight">
               Hodi Ombath
             </span>
