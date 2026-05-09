@@ -1,19 +1,18 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import CollectionManager from '@/components/CollectionManager';
 import { Memory, MemoryCollection } from '@/lib/types';
 import { mockMemories, mockCollections } from '@/lib/mockData';
 import MemoryForm from '@/components/MemoryForm';
-import { Plus, Edit2, Trash2, Eye, EyeOff, MapPin, Map, Shield } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Plus, Edit2, Trash2, Eye, EyeOff, MapPin, Map, Shield, RotateCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { rtdb } from '@/lib/firebase';
 import { ref, onValue, set, remove, update } from 'firebase/database';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 // Dynamically import map to avoid SSR issues
 const AdminMapView = dynamic(() => import('@/components/AdminMapView'), { ssr: false });
@@ -31,12 +30,14 @@ export default function AdminDashboard() {
   const [showMapView, setShowMapView] = useState(false);
   const [activeTab, setActiveTab] = useState<'memories' | 'users'>('memories');
   const [userLogs, setUserLogs] = useState<any[]>([]);
+  const [userProfiles, setUserProfiles] = useState<any[]>([]);
   const [visibilityToggle, setVisibilityToggle] = useState<Set<string>>(new Set());
+  const [dbStatus, setDbStatus] = useState<{ type: 'success' | 'error' | 'loading', msg: string } | null>(null);
 
   // Fetch Memories
   useEffect(() => {
     const memoriesRef = ref(rtdb, 'memories');
-    return onValue(memoriesRef, (snapshot) => {
+    const unsubscribe = onValue(memoriesRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const list = Object.values(data) as Memory[];
@@ -46,12 +47,13 @@ export default function AdminDashboard() {
         setMemories(mockMemories);
       }
     });
+    return () => unsubscribe();
   }, []);
 
   // Fetch Collections
   useEffect(() => {
     const collectionsRef = ref(rtdb, 'collections');
-    return onValue(collectionsRef, (snapshot) => {
+    const unsubscribe = onValue(collectionsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         setCollections(Object.values(data) as MemoryCollection[]);
@@ -59,8 +61,35 @@ export default function AdminDashboard() {
         setCollections(mockCollections);
       }
     });
+    return () => unsubscribe();
   }, []);
 
+  // Fetch Profiles & Logs
+  useEffect(() => {
+    if (user && user.email === 'shivarajmani2005@gmail.com') {
+      const profilesRef = ref(rtdb, 'profiles');
+      const profilesUnsub = onValue(profilesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) setUserProfiles(Object.values(data));
+      });
+
+      const logsRef = ref(rtdb, 'access_logs');
+      const logsUnsub = onValue(logsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const logs = Object.values(data).sort((a: any, b: any) => b.timestamp - a.timestamp);
+          setUserLogs(logs);
+        }
+      });
+
+      return () => {
+        profilesUnsub();
+        logsUnsub();
+      };
+    }
+  }, [user]);
+
+  // Auth Protection
   useEffect(() => {
     if (!loading) {
       if (!user) {
@@ -71,35 +100,6 @@ export default function AdminDashboard() {
     }
   }, [user, loading, router]);
 
-  const [userProfiles, setUserProfiles] = useState<any[]>([]);
-
-  // Fetch Profiles
-  useEffect(() => {
-    if (user && user.email === 'shivarajmani2005@gmail.com') {
-      const profilesRef = ref(rtdb, 'profiles');
-      return onValue(profilesRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setUserProfiles(Object.values(data));
-        }
-      });
-    }
-  }, [user]);
-
-  // Fetch access logs
-  useEffect(() => {
-    if (user && user.email === 'shivarajmani2005@gmail.com') {
-      const logsRef = ref(rtdb, 'access_logs');
-      onValue(logsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const logs = Object.values(data).sort((a: any, b: any) => b.timestamp - a.timestamp);
-          setUserLogs(logs);
-        }
-      });
-    }
-  }, [user]);
-
   const filteredMemories = memories.filter(
     (memory) =>
       memory.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -107,104 +107,56 @@ export default function AdminDashboard() {
   );
 
   const handleCreateMemory = async (memory: Memory) => {
+    setDbStatus({ type: 'loading', msg: 'Creating memory...' });
     try {
       await set(ref(rtdb, `memories/${memory.id}`), memory);
+      setDbStatus({ type: 'success', msg: 'Memory stored successfully!' });
       setShowForm(false);
-    } catch (error) {
-      console.error("Error creating memory:", error);
+      setTimeout(() => setDbStatus(null), 3000);
+    } catch (error: any) {
+      console.error("Store error:", error);
+      setDbStatus({ type: 'error', msg: `Failed to store: ${error.message}` });
     }
   };
 
   const handleUpdateMemory = async (memory: Memory) => {
+    setDbStatus({ type: 'loading', msg: 'Updating memory...' });
     try {
       await set(ref(rtdb, `memories/${memory.id}`), memory);
+      setDbStatus({ type: 'success', msg: 'Memory updated successfully!' });
       setEditingMemory(null);
       setShowForm(false);
-    } catch (error) {
-      console.error("Error updating memory:", error);
+      setTimeout(() => setDbStatus(null), 3000);
+    } catch (error: any) {
+      setDbStatus({ type: 'error', msg: `Update failed: ${error.message}` });
     }
   };
 
   const handleDeleteMemory = async (id: string) => {
     if (confirm('Are you sure you want to delete this memory?')) {
+      setDbStatus({ type: 'loading', msg: 'Deleting...' });
       try {
         await remove(ref(rtdb, `memories/${id}`));
-      } catch (error) {
-        console.error("Error deleting memory:", error);
+        setDbStatus({ type: 'success', msg: 'Memory deleted!' });
+        setTimeout(() => setDbStatus(null), 3000);
+      } catch (error: any) {
+        setDbStatus({ type: 'error', msg: `Delete failed: ${error.message}` });
       }
     }
   };
 
   const handleToggleVisibility = async (id: string) => {
     const isVisible = visibilityToggle.has(id);
-    // In a real app, you might have a 'published' field in the memory object
-    // For now, we'll just mock the toggle behavior locally or update the DB if field exists
     const newVisibility = new Set(visibilityToggle);
     if (isVisible) newVisibility.delete(id);
     else newVisibility.add(id);
     setVisibilityToggle(newVisibility);
   };
 
-  const handleFormSubmit = (memory: Memory) => {
-    if (editingMemory) {
-      handleUpdateMemory(memory);
-    } else {
-      handleCreateMemory(memory);
-    }
-  };
-
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setEditingMemory(null);
-  };
-
-  const handleAddToCollection = async (memoryId: string, collectionId: string) => {
-    const collection = collections.find(c => c.id === collectionId);
-    if (!collection) return;
-
-    const memoriesList = collection.memories.includes(memoryId)
-      ? collection.memories.filter((id) => id !== memoryId)
-      : [...collection.memories, memoryId];
-
-    try {
-      await update(ref(rtdb, `collections/${collectionId}`), {
-        memories: memoriesList,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error("Error updating collection:", error);
-    }
-  };
-
-  const handleCreateCollection = async (collection: Omit<MemoryCollection, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const id = Date.now().toString();
-    const newCollection: MemoryCollection = {
-      ...collection,
-      id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    try {
-      await set(ref(rtdb, `collections/${id}`), newCollection);
-    } catch (error) {
-      console.error("Error creating collection:", error);
-    }
-  };
-
-  const handleDeleteCollection = async (collectionId: string) => {
-    if (confirm('Delete this collection?')) {
-      try {
-        await remove(ref(rtdb, `collections/${collectionId}`));
-      } catch (error) {
-        console.error("Error deleting collection:", error);
-      }
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <RotateCw className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -215,22 +167,9 @@ export default function AdminDashboard() {
         <Navigation />
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-md w-full text-center space-y-6 p-8 bg-card rounded-2xl border border-border shadow-xl">
-            <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <Shield size={40} className="text-destructive" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground">Access Denied</h2>
-              <p className="text-muted-foreground text-sm">
-                You do not have the required permissions to access the Admin Dashboard. 
-                Please contact the administrator if you believe this is an error.
-              </p>
-            </div>
-            <button
-              onClick={() => router.push('/')}
-              className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
-            >
-              Back to Home
-            </button>
+            <Shield size={40} className="text-destructive mx-auto" />
+            <h2 className="text-2xl font-bold">Access Denied</h2>
+            <button onClick={() => router.push('/')} className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold">Back to Home</button>
           </div>
         </div>
       </div>
@@ -238,161 +177,129 @@ export default function AdminDashboard() {
   }
 
   return (
-    <>
+    <div className="flex flex-col h-screen bg-background overflow-hidden">
       <Navigation />
-      <div className="flex flex-col h-screen bg-background overflow-hidden">
-      {/* Header */}
-      <div className="border-b border-border sticky top-0 bg-background/95 backdrop-blur-sm z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Manage your travel memories and collections
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
+      
+      {/* Admin Header */}
+      <div className="border-b border-border bg-card/50 backdrop-blur-md z-20 p-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Admin Control</h1>
+            <p className="text-sm text-muted-foreground">Manage Realtime Data</p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="flex bg-muted p-1 rounded-lg">
+              <button 
                 onClick={() => setActiveTab('memories')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'memories' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                }`}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'memories' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'}`}
               >
-                Memories
+                Data
               </button>
-              <button
+              <button 
                 onClick={() => setActiveTab('users')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === 'users' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'
-                }`}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'users' ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground'}`}
               >
                 Users
               </button>
-              <div className="w-px h-6 bg-border mx-2" />
-              <button
-                onClick={() => setShowMapView(!showMapView)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  showMapView
-                    ? 'bg-secondary text-secondary-foreground'
-                    : 'bg-muted text-foreground hover:bg-muted/80'
-                }`}
-              >
-                <Map size={18} />
-                Map View
-              </button>
-              <button
-                onClick={() => {
-                  setEditingMemory(null);
-                  setShowForm(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
-              >
-                <Plus size={18} />
-                New Memory
-              </button>
             </div>
+            
+            <button
+              onClick={() => setShowMapView(!showMapView)}
+              className={`p-2 rounded-lg border transition-all ${showMapView ? 'bg-primary/10 border-primary text-primary' : 'bg-background border-border text-muted-foreground'}`}
+            >
+              <Map size={20} />
+            </button>
+            
+            <button
+              onClick={() => { setEditingMemory(null); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+            >
+              <Plus size={18} />
+              New Entry
+            </button>
           </div>
-
-          {/* Search */}
-          <input
-            type="text"
-            placeholder="Search memories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full max-w-md px-4 py-2 rounded-lg bg-card border border-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto bg-muted/30">
-        {showMapView ? (
-          // Map View with Collection Manager
-          <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 min-h-[600px]">
-            <div className="lg:col-span-2 h-[500px] lg:h-full rounded-xl overflow-hidden border border-border shadow-inner bg-card">
-              <AdminMapView 
-                memories={memories}
-                onMemorySelect={setSelectedMapMemory}
-              />
-            </div>
-            <div className="bg-card rounded-xl border border-border flex flex-col shadow-sm overflow-hidden h-[500px] lg:h-full">
-              <CollectionManager
-                collections={collections}
-                selectedMemory={selectedMapMemory}
-                onAddToCollection={handleAddToCollection}
-                onCreateCollection={handleCreateCollection}
-                onDeleteCollection={handleDeleteCollection}
-              />
-            </div>
-          </div>
-        ) : (
-          // Table View
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-full">
-            {activeTab === 'memories' ? (
-              <>
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                  <div className="bg-card rounded-lg p-4 border border-border">
-                    <p className="text-sm text-muted-foreground mb-1">Total Memories</p>
-                    <p className="text-3xl font-bold text-foreground">{memories.length}</p>
-                  </div>
-                  <div className="bg-card rounded-lg p-4 border border-border">
-                    <p className="text-sm text-muted-foreground mb-1">Countries Visited</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      {new Set(memories.map((m) => m.location.country)).size}
-                    </p>
-                  </div>
-                  <div className="bg-card rounded-lg p-4 border border-border">
-                    <p className="text-sm text-muted-foreground mb-1">Average Rating</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      {(memories.reduce((sum, m) => sum + m.rating, 0) / memories.length).toFixed(1)}/5
-                    </p>
-                  </div>
-                  <div className="bg-card rounded-lg p-4 border border-border">
-                    <p className="text-sm text-muted-foreground mb-1">Collections</p>
-                    <p className="text-3xl font-bold text-foreground">{collections.length}</p>
-                  </div>
-                </div>
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-auto p-6 relative">
+        <AnimatePresence>
+          {dbStatus && (
+            <motion.div
+              initial={{ opacity: 0, y: -40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-6 py-3 rounded-full shadow-2xl backdrop-blur-md border border-white/10"
+              style={{ 
+                backgroundColor: dbStatus.type === 'success' ? 'rgba(34, 197, 94, 0.9)' : 
+                               dbStatus.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 
+                               'rgba(59, 130, 246, 0.9)',
+                color: 'white'
+              }}
+            >
+              {dbStatus.type === 'loading' ? <RotateCw className="animate-spin" size={18} /> : 
+               dbStatus.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+              <span className="font-semibold text-sm tracking-tight">{dbStatus.msg}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                {/* Memories Table */}
-                <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div className="max-w-7xl mx-auto h-full">
+          {showMapView ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-280px)]">
+              <div className="lg:col-span-2 rounded-2xl overflow-hidden border border-border shadow-2xl bg-card relative">
+                <AdminMapView memories={memories} onMemorySelect={setSelectedMapMemory} />
+              </div>
+              <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xl flex flex-col">
+                <CollectionManager
+                  collections={collections}
+                  selectedMemory={selectedMapMemory}
+                  onAddToCollection={handleAddToCollection}
+                  onCreateCollection={handleCreateCollection}
+                  onDeleteCollection={handleDeleteCollection}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {activeTab === 'memories' ? (
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xl">
+                  <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h2 className="text-xl font-bold">Memory Inventory</h2>
+                    <input
+                      type="text"
+                      placeholder="Filter by title or country..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-4 py-2 rounded-xl bg-muted/50 border border-border text-sm focus:ring-2 focus:ring-primary outline-none transition-all w-full md:w-64"
+                    />
+                  </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-muted border-b border-border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-widest">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Title</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Location</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Date</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Public</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Actions</th>
+                          <th className="px-6 py-4 text-left">Memory</th>
+                          <th className="px-6 py-4 text-left">Location</th>
+                          <th className="px-6 py-4 text-left">Date</th>
+                          <th className="px-6 py-4 text-center">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {filteredMemories.map((memory, idx) => (
-                          <tr key={memory.id} className="hover:bg-muted/50 transition-colors">
+                        {filteredMemories.map((m) => (
+                          <tr key={m.id} className="hover:bg-muted/30 transition-colors group">
                             <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                {memory.images.length > 0 && (
-                                  <img src={memory.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                                )}
-                                <span className="font-medium text-foreground">{memory.title}</span>
+                              <div className="flex items-center gap-4">
+                                <img src={m.images[0]} alt="" className="w-12 h-12 rounded-xl object-cover shadow-sm ring-1 ring-border" />
+                                <span className="font-bold text-foreground">{m.title}</span>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground">
-                              {memory.location.city}, {memory.location.country}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground">
-                              {new Date(memory.travelDate).toLocaleDateString()}
-                            </td>
+                            <td className="px-6 py-4 text-muted-foreground font-medium">{m.location.city}, {m.location.country}</td>
+                            <td className="px-6 py-4 text-muted-foreground">{new Date(m.travelDate).toLocaleDateString()}</td>
                             <td className="px-6 py-4">
-                              <button onClick={() => handleToggleVisibility(memory.id)} className="p-2 hover:bg-muted rounded-lg">
-                                {visibilityToggle.has(memory.id) ? <Eye size={16} className="text-primary" /> : <EyeOff size={16} />}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex gap-2">
-                                <button onClick={() => { setEditingMemory(memory); setShowForm(true); }} className="p-2 hover:bg-muted rounded-lg"><Edit2 size={16} className="text-primary" /></button>
-                                <button onClick={() => handleDeleteMemory(memory.id)} className="p-2 hover:bg-muted rounded-lg"><Trash2 size={16} className="text-destructive" /></button>
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => { setEditingMemory(m); setShowForm(true); }} className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors"><Edit2 size={16} /></button>
+                                <button onClick={() => handleDeleteMemory(m.id)} className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors"><Trash2 size={16} /></button>
                               </div>
                             </td>
                           </tr>
@@ -401,65 +308,59 @@ export default function AdminDashboard() {
                     </table>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="bg-card rounded-lg border border-border overflow-hidden">
-                <div className="p-6 border-b border-border">
-                  <h2 className="text-xl font-bold text-foreground">Registered Users</h2>
-                  <p className="text-sm text-muted-foreground">Comprehensive list of users who have signed into Hodi Ombath</p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted border-b border-border">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">User</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Email</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Last Active</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">Role</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {userProfiles.map((profile, idx) => (
-                        <tr key={idx} className="hover:bg-muted/50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <img src={profile.photoURL} alt="" className="w-8 h-8 rounded-full" />
-                              <span className="font-medium text-foreground">{profile.displayName}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">{profile.email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                            {profile.lastSeen ? new Date(profile.lastSeen).toLocaleString() : 'Never'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                              profile.email === 'shivarajmani2005@gmail.com' 
-                              ? 'bg-primary/20 text-primary' 
-                              : 'bg-blue-500/20 text-blue-500'
-                            }`}>
-                              {profile.email === 'shivarajmani2005@gmail.com' ? 'Admin' : 'User'}
-                            </span>
-                          </td>
+              ) : (
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-xl">
+                  <div className="p-6 border-b border-border">
+                    <h2 className="text-xl font-bold">Registered Community</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-muted-foreground uppercase text-[10px] font-bold tracking-widest">
+                        <tr>
+                          <th className="px-6 py-4 text-left">User</th>
+                          <th className="px-6 py-4 text-left">Email</th>
+                          <th className="px-6 py-4 text-left">Last Active</th>
+                          <th className="px-6 py-4 text-left">Role</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {userProfiles.map((p, idx) => (
+                          <tr key={idx} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <img src={p.photoURL} alt="" className="w-8 h-8 rounded-full ring-1 ring-border" />
+                                <span className="font-bold text-foreground">{p.displayName}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-muted-foreground">{p.email}</td>
+                            <td className="px-6 py-4 text-muted-foreground font-medium">{p.lastSeen ? new Date(p.lastSeen).toLocaleString() : 'Never'}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${p.email === 'shivarajmani2005@gmail.com' ? 'bg-primary/20 text-primary' : 'bg-blue-500/20 text-blue-500'}`}>
+                                {p.email === 'shivarajmani2005@gmail.com' ? 'Admin' : 'User'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Memory Form Modal */}
-      {showForm && (
-        <MemoryForm
-          initialMemory={editingMemory || undefined}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-        />
-      )}
-      </div>
-    </>
+      {/* Modals */}
+      <AnimatePresence>
+        {showForm && (
+          <MemoryForm
+            initialMemory={editingMemory || undefined}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormCancel}
+          />
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

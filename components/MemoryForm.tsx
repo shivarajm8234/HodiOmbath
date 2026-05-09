@@ -21,8 +21,17 @@ const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLaye
 const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
 const useMapEvents = dynamic(() => import('react-leaflet').then(mod => mod.useMapEvents), { ssr: false } as any) as any;
 
+const useMap = dynamic(() => import('react-leaflet').then(mod => mod.useMap), { ssr: false } as any) as any;
+
 function LocationMarker({ position, setPosition }: { position: [number, number], setPosition: (pos: [number, number]) => void }) {
   const markerRef = useRef<any>(null);
+  const map = useMap();
+
+  useEffect(() => {
+    if (position && position[0] !== 0) {
+      map.flyTo(position, 12);
+    }
+  }, [map]);
 
   const mapEvents = useMapEvents({
     click(e: any) {
