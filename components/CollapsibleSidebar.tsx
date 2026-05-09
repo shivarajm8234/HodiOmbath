@@ -132,85 +132,74 @@ export default function CollapsibleSidebar({
 
             {/* Centered Popup Modal */}
             <motion.div
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-2xl bg-card border border-border shadow-2xl z-[4500] flex flex-col overflow-hidden rounded-2xl max-h-[85vh]"
-              initial={{ opacity: 0, scale: 0.9, y: "-45%" }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-lg bg-white border border-gray-200 shadow-2xl z-[6000] flex flex-col overflow-hidden rounded-3xl max-h-[85vh]"
+              initial={{ opacity: 0, scale: 0.95, y: "-48%" }}
               animate={{ opacity: 1, scale: 1, y: "-50%" }}
-              exit={{ opacity: 0, scale: 0.9, y: "-45%" }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              exit={{ opacity: 0, scale: 0.95, y: "-48%" }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             >
-              {/* Header */}
-              <div className="p-5 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/10 via-secondary/5 to-transparent">
-                <div className="flex items-center gap-3">
-                  <motion.div 
-                    className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <MapPin size={22} className="text-primary-foreground" />
-                  </motion.div>
-                  <div>
-                    <h2 className="text-lg font-bold text-foreground">Memories</h2>
-                    <p className="text-xs text-muted-foreground">{filteredMemories.length} found</p>
-                  </div>
+              {/* Close button */}
+              <motion.button
+                onClick={handleClose}
+                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+                whileTap={{ scale: 0.95 }}
+                aria-label="Close popup"
+              >
+                <X size={20} className="text-gray-400" />
+              </motion.button>
+
+              {/* Header (Login Style) */}
+              <div className="pt-10 pb-6 flex flex-col items-center">
+                <div className="mb-6">
+                  <img src="/icon.png" alt="Logo" className="w-14 h-14 rounded-xl shadow-sm" />
                 </div>
-                <motion.button
-                  onClick={handleClose}
-                  className="p-2 hover:bg-muted rounded-lg transition-colors"
-                  whileTap={{ scale: 0.95 }}
-                  aria-label="Close sidebar"
-                >
-                  <X size={20} className="text-foreground" />
-                </motion.button>
+                <h2 className="text-3xl font-bold text-[#2d2e2e]">Memories</h2>
+                <p className="text-sm text-gray-500 mt-1">Discover your travel stories</p>
               </div>
 
               {/* Search and filters */}
-              <div className="p-4 space-y-3 border-b border-border bg-background/50">
+              <div className="px-6 pb-6 space-y-5">
                 {/* Search */}
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-3 text-muted-foreground pointer-events-none" />
+                  <Search size={18} className="absolute left-4 top-3.5 text-gray-400 pointer-events-none" />
                   <input
                     ref={searchInputRef}
                     type="text"
                     placeholder="Search memories..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-lg bg-card border-2 border-input text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm transition-all"
+                    className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-[#2d2e2e] placeholder:text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 text-base transition-all"
                     aria-label="Search memories"
                   />
                 </div>
 
                 {/* Mood filter */}
-                <div>
-                  <label className="text-xs font-bold text-foreground mb-2.5 block uppercase tracking-wide">
-                    Mood Filter
-                  </label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <motion.button
+                    onClick={() => setFilterMood(null)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      filterMood === null
+                        ? 'bg-[#2d2e2e] text-white shadow-md'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    All
+                  </motion.button>
+                  {moods.map((mood) => (
                     <motion.button
-                      onClick={() => setFilterMood(null)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all uppercase tracking-wide ${
-                        filterMood === null
-                          ? 'bg-primary text-primary-foreground shadow-lg'
-                          : 'bg-muted/60 text-muted-foreground hover:bg-primary/20'
+                      key={mood}
+                      onClick={() => setFilterMood(mood)}
+                      className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all ${
+                        filterMood === mood
+                          ? 'bg-[#2d2e2e] text-white shadow-md'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                       whileTap={{ scale: 0.95 }}
                     >
-                      All
+                      {mood}
                     </motion.button>
-                    {moods.map((mood) => (
-                      <motion.button
-                        key={mood}
-                        onClick={() => setFilterMood(mood)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold capitalize transition-all ${
-                          filterMood === mood
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'bg-muted/60 text-muted-foreground hover:bg-primary/20'
-                        }`}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {mood}
-                      </motion.button>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               </div>
 
@@ -246,21 +235,21 @@ export default function CollapsibleSidebar({
 
               {/* Stats footer */}
               <motion.div 
-                className="p-4 border-t border-border bg-gradient-to-t from-primary/5 to-transparent text-xs text-muted-foreground space-y-2.5"
+                className="p-6 border-t border-gray-100 bg-gray-50/50 text-xs text-gray-500 space-y-2.5"
                 initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Total memories:</span>
-                  <span className="font-bold text-foreground">{memories.length}</span>
+                  <span className="font-bold text-[#2d2e2e]">{memories.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Countries:</span>
-                  <span className="font-bold text-foreground">{new Set(memories.map(m => m.location?.country)).size}</span>
+                  <span className="font-bold text-[#2d2e2e]">{new Set(memories.map(m => m.location?.country)).size}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Avg rating:</span>
-                  <span className="font-bold text-foreground">{'⭐'.repeat(Math.round(memories.reduce((sum, m) => sum + m.rating, 0) / memories.length))}</span>
+                  <span className="font-bold text-[#2d2e2e]">{'⭐'.repeat(Math.round(memories.reduce((sum, m) => sum + m.rating, 0) / memories.length))}</span>
                 </div>
               </motion.div>
             </motion.div>
