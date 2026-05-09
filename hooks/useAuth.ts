@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
 import { auth, googleProvider, rtdb } from "@/lib/firebase";
-import { ref, push, serverTimestamp } from "firebase/database";
+import { ref, push, serverTimestamp, set } from "firebase/database";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
