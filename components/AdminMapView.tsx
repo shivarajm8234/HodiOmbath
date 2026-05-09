@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { Memory } from '@/lib/types';
 import { MOOD_COLORS } from '@/lib/mapUtils';
 import { RotateCw, Zap } from 'lucide-react';
+import { rtdb } from '@/lib/firebase';
+import { ref, onValue } from 'firebase/database';
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(

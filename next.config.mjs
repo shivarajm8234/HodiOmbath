@@ -49,7 +49,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://apis.google.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:; font-src 'self'; connect-src 'self' https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://tile.opentopomap.org https://drive.google.com https://firebaseinstallations.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://*.google-analytics.com https://*.googletagmanager.com; frame-src 'self' https://*.firebaseapp.com; frame-ancestors 'none'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://apis.google.com https://*.firebaseapp.com https://*.googleapis.com https://*.firebase.com https://*.google.com; script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.googleapis.com https://*.firebase.com https://*.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob: https://*.openstreetmap.org https://*.opentopomap.org https://*.google.com https://*.gstatic.com; font-src 'self' data:; connect-src 'self' https://nominatim.openstreetmap.org https://tile.openstreetmap.org https://tile.opentopomap.org https://drive.google.com https://firebaseinstallations.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://*.google-analytics.com https://*.googletagmanager.com https://*.firebase.com; frame-src 'self' https://*.firebaseapp.com https://*.google.com; frame-ancestors 'none'",
           },
         ],
       },

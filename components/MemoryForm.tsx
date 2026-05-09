@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Memory } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { X, Upload, Loader2, MapPin } from 'lucide-react';
@@ -22,13 +22,41 @@ const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { 
 const useMapEvents = dynamic(() => import('react-leaflet').then(mod => mod.useMapEvents), { ssr: false } as any) as any;
 
 function LocationMarker({ position, setPosition }: { position: [number, number], setPosition: (pos: [number, number]) => void }) {
+  const markerRef = useRef<any>(null);
+
   const mapEvents = useMapEvents({
-    dblclick(e: any) {
+    click(e: any) {
       setPosition([e.latlng.lat, e.latlng.lng]);
     },
   });
 
-  return position ? <Marker position={position} /> : null;
+  const eventHandlers = useMemo(
+    () => ({
+      dragend() {
+        const marker = markerRef.current;
+        if (marker != null) {
+          const latlng = marker.getLatLng();
+          setPosition([latlng.lat, latlng.lng]);
+        }
+      },
+    }),
+    [setPosition]
+  );
+
+  return (position && position[0] !== 0) ? (
+    <Marker 
+      draggable={true}
+      eventHandlers={eventHandlers}
+      position={position} 
+      ref={markerRef}
+    />
+  ) : null;
+}
+
+interface MemoryFormProps {
+  initialMemory?: Memory;
+  onSubmit: (memory: Memory) => void;
+  onCancel: () => void;
 }
 
 export default function MemoryForm({
@@ -391,7 +419,7 @@ export default function MemoryForm({
               </span>
             </label>
             <p className="text-xs text-muted-foreground">
-              Double-click anywhere on the map to set the exact coordinates for this memory.
+              Click anywhere on the map to set the exact coordinates for this memory. You can also drag the pin after placing it.
             </p>
             <div className="h-[300px] w-full rounded-2xl overflow-hidden border border-border shadow-inner bg-gray-50 relative z-0">
               <MapContainer
