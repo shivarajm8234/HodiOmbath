@@ -97,10 +97,6 @@ export default function LoginPage() {
               Privacy Policy
             </button>
           </p>
-          <p className="text-gray-600">
-            Don't have an account?{" "}
-            <button onClick={handleLogin} className="text-blue-600 font-medium hover:underline">Sign up</button>
-          </p>
         </div>
 
         <div className="mt-20 text-center text-xs text-gray-400">
