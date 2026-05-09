@@ -1,0 +1,15 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'",
+    "views": {
+      ".write": "auth != null"
+    },
+    "likes": {
+      ".write": "auth != null"
+    },
+    "comments": {
+      ".write": "auth != null"
+    }
+  }
+}
