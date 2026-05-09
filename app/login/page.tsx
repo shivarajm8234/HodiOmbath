@@ -133,13 +133,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mt-16 pt-10 text-center text-xs text-gray-400 space-y-4 w-full">
-          <p>© {new Date().getFullYear()} Hodi Ombath Corporation. All rights reserved.</p>
-          <div className="flex justify-center gap-6">
-            <button onClick={() => setModalType("terms")} className="hover:underline">Terms of Service</button>
-            <button onClick={() => setModalType("privacy")} className="hover:underline">Privacy Policy</button>
-          </div>
-        </div>
       </div>
 
       {/* Pop-up Modals (Terms/Privacy) */}

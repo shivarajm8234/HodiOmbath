@@ -34,18 +34,7 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className="font-sans antialiased bg-background text-foreground">
         <div className="flex flex-col min-h-screen">
-          <main className="flex-1">
-            {children}
-          </main>
-          <footer className="border-t border-border bg-background py-6 px-4">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-              <p>© {new Date().getFullYear()} Hodi Ombath. All rights reserved.</p>
-              <div className="flex gap-6">
-                <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-                <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-              </div>
-            </div>
-          </footer>
+          {children}
         </div>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
