@@ -12,6 +12,10 @@
       ".read": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'",
       ".write": "auth != null"
     },
+    "profiles": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "views": {
       ".read": "auth != null",
       ".write": "auth != null"

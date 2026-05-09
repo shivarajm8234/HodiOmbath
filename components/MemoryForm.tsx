@@ -15,52 +15,8 @@ import {
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
 
-// Dynamically import Leaflet components to avoid SSR issues
-const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
-const useMapEvents = dynamic(() => import('react-leaflet').then(mod => mod.useMapEvents), { ssr: false } as any) as any;
-
-const useMap = dynamic(() => import('react-leaflet').then(mod => mod.useMap), { ssr: false } as any) as any;
-
-function LocationMarker({ position, setPosition }: { position: [number, number], setPosition: (pos: [number, number]) => void }) {
-  const markerRef = useRef<any>(null);
-  const map = useMap();
-
-  useEffect(() => {
-    if (position && position[0] !== 0) {
-      map.flyTo(position, 12);
-    }
-  }, [map]);
-
-  const mapEvents = useMapEvents({
-    click(e: any) {
-      setPosition([e.latlng.lat, e.latlng.lng]);
-    },
-  });
-
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = markerRef.current;
-        if (marker != null) {
-          const latlng = marker.getLatLng();
-          setPosition([latlng.lat, latlng.lng]);
-        }
-      },
-    }),
-    [setPosition]
-  );
-
-  return (position && position[0] !== 0) ? (
-    <Marker 
-      draggable={true}
-      eventHandlers={eventHandlers}
-      position={position} 
-      ref={markerRef}
-    />
-  ) : null;
-}
+// Dynamically import the map picker to avoid SSR issues with react-leaflet hooks
+const LocationPickerMap = dynamic(() => import('@/components/LocationPickerMap'), { ssr: false });
 
 interface MemoryFormProps {
   initialMemory?: Memory;
@@ -73,19 +29,6 @@ export default function MemoryForm({
   onSubmit,
   onCancel,
 }: MemoryFormProps) {
-  useEffect(() => {
-    // Initialize Leaflet icons on client side
-    const initLeaflet = async () => {
-      const L = (await import('leaflet')).default;
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-      });
-    };
-    initLeaflet();
-  }, []);
   const [formData, setFormData] = useState<Partial<Memory>>(
     initialMemory || {
       title: '',
@@ -430,23 +373,37 @@ export default function MemoryForm({
             <p className="text-xs text-muted-foreground">
               Click anywhere on the map to set the exact coordinates for this memory. You can also drag the pin after placing it.
             </p>
-            <div className="h-[300px] w-full rounded-2xl overflow-hidden border border-border shadow-inner bg-gray-50 relative z-0">
-              <MapContainer
-                center={(formData.coordinates && formData.coordinates[0] !== 0) ? [formData.coordinates[1], formData.coordinates[0]] : [20, 77]}
-                zoom={4}
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <LocationMarker 
-                  position={[formData.coordinates?.[1] || 0, formData.coordinates?.[0] || 0]} 
-                  setPosition={(pos) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      coordinates: [pos[1], pos[0]]
-                    }));
-                  }} 
+            <div className="h-[350px] w-full rounded-2xl overflow-hidden border border-border shadow-inner bg-gray-50 relative z-0">
+              <LocationPickerMap
+                coordinates={formData.coordinates as [number, number] || [0, 0]}
+                setCoordinates={(pos) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    coordinates: [pos[1], pos[0]]
+                  }));
+                }}
+              />
+
+              {/* Overlay Search for Map */}
+              <div className="absolute top-4 left-4 right-4 z-[1000] flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Search for a place on the map..."
+                  value={placeNameInput}
+                  onChange={(e) => setPlaceNameInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAutoGeocode()}
+                  className="flex-1 px-4 py-2 text-sm rounded-xl bg-white/95 backdrop-blur-md border border-border shadow-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                 />
-              </MapContainer>
+                <button
+                  type="button"
+                  onClick={handleAutoGeocode}
+                  disabled={isGeocoding || !placeNameInput.trim()}
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 whitespace-nowrap"
+                >
+                  {isGeocoding ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
+                  Go
+                </button>
+              </div>
             </div>
             <div className="flex gap-4 text-xs font-mono text-muted-foreground bg-muted/30 p-3 rounded-xl border border-border/50">
               <div className="flex-1">
