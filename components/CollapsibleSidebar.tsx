@@ -130,13 +130,13 @@ export default function CollapsibleSidebar({
               onClick={handleClose}
             />
 
-            {/* Sidebar Content */}
+            {/* Centered Popup Modal */}
             <motion.div
-              className="fixed left-0 top-0 bottom-0 w-full sm:w-96 bg-card border-r border-border shadow-2xl z-[4500] flex flex-col overflow-hidden"
-              initial={{ x: -400 }}
-              animate={{ x: 0 }}
-              exit={{ x: -400 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-2xl bg-card border border-border shadow-2xl z-[4500] flex flex-col overflow-hidden rounded-2xl max-h-[85vh]"
+              initial={{ opacity: 0, scale: 0.9, y: "-45%" }}
+              animate={{ opacity: 1, scale: 1, y: "-50%" }}
+              exit={{ opacity: 0, scale: 0.9, y: "-45%" }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             >
               {/* Header */}
               <div className="p-5 border-b border-border flex items-center justify-between bg-gradient-to-r from-primary/10 via-secondary/5 to-transparent">
