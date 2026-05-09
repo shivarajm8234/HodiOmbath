@@ -139,50 +139,7 @@ export default function InteractiveMap({
                   onMemoryClick?.(memory);
                 },
               }}
-            >
-              <Popup maxWidth={350} className="custom-popup">
-                <div className="p-0 bg-white rounded-lg overflow-hidden" style={{ minWidth: '280px' }}>
-                  {/* Image with error handling */}
-                  {memory.images && memory.images[0] ? (
-                    <div className="relative w-full bg-gradient-to-b from-gray-200 to-gray-300" style={{ height: '180px' }}>
-                      <img
-                        src={memory.images[0]}
-                        alt={memory.title}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        crossOrigin="anonymous"
-                        onError={(e) => {
-                          console.log('[v0] Image failed to load:', memory.images[0]);
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center" style={{ height: '140px' }}>
-                      <div className="text-gray-500 text-center">
-                        <AlertCircle size={32} className="mx-auto mb-2 opacity-50" />
-                        <p className="text-xs">No image</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Content */}
-                  <div className="p-3">
-                    <h3 className="font-bold text-foreground text-sm mb-1 line-clamp-2">{memory.title}</h3>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      <span className="font-semibold">{memory.location?.city || 'Unknown'}</span>, {memory.location?.country}
-                    </p>
-                    <p className="text-xs text-gray-600 line-clamp-3 mb-2">{memory.description}</p>
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <span className="text-xs font-medium text-primary capitalize">{memory.mood}</span>
-                      <div className="flex">
-                        {'⭐'.repeat(memory.rating)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+            />
           );
         })}
       </MapContainer>

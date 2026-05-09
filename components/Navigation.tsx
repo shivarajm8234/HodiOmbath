@@ -36,35 +36,29 @@ export default function Navigation() {
     <nav className="sticky top-0 z-[5000] border-b border-border bg-background/95 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center group-hover:scale-110 transition-transform">
-              <MapPin size={20} className="text-primary-foreground" />
+          {/* Brand - Centered on all screens */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3 group cursor-pointer">
+            <div className="w-10 h-10 rounded-xl bg-[#00a82d] flex items-center justify-center shadow-lg shadow-[#00a82d]/20 group-hover:rotate-12 transition-transform">
+              <MapPin size={24} className="text-white" />
             </div>
-            <span className="text-xl font-bold text-foreground hidden sm:inline">
+            <span className="text-2xl font-black text-[#2d2e2e] tracking-tight">
               Hodi Ombath
             </span>
-          </Link>
+          </div>
 
-          {/* Desktop menu */}
-          <div className="hidden md:flex items-center gap-8">
+          {/* Left menu (Map/Admin) */}
+          <div className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative font-medium transition-colors ${
+                className={`text-sm font-bold uppercase tracking-wider transition-colors ${
                   isActive(item.href)
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'text-[#00a82d]'
+                    : 'text-gray-400 hover:text-[#2d2e2e]'
                 }`}
               >
                 {item.label}
-                {isActive(item.href) && (
-                  <motion.div
-                    layoutId="underline"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                  />
-                )}
               </Link>
             ))}
           </div>

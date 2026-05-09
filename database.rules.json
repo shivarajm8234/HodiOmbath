@@ -1,15 +1,30 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'",
+    "memories": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'"
+    },
+    "collections": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'"
+    },
+    "access_logs": {
+      ".read": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'",
+      ".write": "auth != null"
+    },
     "views": {
+      ".read": "auth != null",
       ".write": "auth != null"
     },
     "likes": {
+      ".read": "auth != null",
       ".write": "auth != null"
     },
     "comments": {
+      ".read": "auth != null",
       ".write": "auth != null"
-    }
+    },
+    ".read": "auth != null",
+    ".write": "auth != null && auth.token.email === 'shivarajmani2005@gmail.com'"
   }
 }

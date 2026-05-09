@@ -16,12 +16,30 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Storyboard from '@/components/Storyboard';
 
+import { rtdb } from '@/lib/firebase';
+import { ref, onValue } from 'firebase/database';
+
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [showStoryboard, setShowStoryboard] = useState(true);
-  const [memories] = useState<Memory[]>(mockMemories);
+  const [memories, setMemories] = useState<Memory[]>([]);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+
+  useEffect(() => {
+    const memoriesRef = ref(rtdb, 'memories');
+    const unsubscribe = onValue(memoriesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Convert object to array if needed
+        const memoriesList = Object.values(data) as Memory[];
+        setMemories(memoriesList);
+      } else {
+        setMemories(mockMemories);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) {

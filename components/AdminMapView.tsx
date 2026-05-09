@@ -35,10 +35,24 @@ interface AdminMapViewProps {
   onMemorySelect?: (memory: Memory) => void;
 }
 
-export default function AdminMapView({ memories, onMemorySelect }: AdminMapViewProps) {
+export default function AdminMapView({
+  memories: propMemories,
+  onMemorySelect,
+}: AdminMapViewProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [memories, setMemories] = useState<Memory[]>(propMemories);
   const [animateWave, setAnimateWave] = useState(false);
   const [L_instance, setLInstance] = useState<any>(null);
+
+  useEffect(() => {
+    setIsLoaded(true);
+    const memoriesRef = ref(rtdb, 'memories');
+    const unsubscribe = onValue(memoriesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) setMemories(Object.values(data));
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     // Ensure component loads on client only

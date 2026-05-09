@@ -10,8 +10,7 @@ import MemoryForm from '@/components/MemoryForm';
 import { Plus, Edit2, Trash2, Eye, EyeOff, MapPin, Map, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { rtdb } from '@/lib/firebase';
-import { ref, onValue } from 'firebase/database';
-
+import { ref, onValue, set, remove, update } from 'firebase/database';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -23,6 +22,45 @@ export default function AdminDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [collections, setCollections] = useState<MemoryCollection[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
+  const [selectedMapMemory, setSelectedMapMemory] = useState<Memory | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showMapView, setShowMapView] = useState(false);
+  const [activeTab, setActiveTab] = useState<'memories' | 'users'>('memories');
+  const [userLogs, setUserLogs] = useState<any[]>([]);
+  const [visibilityToggle, setVisibilityToggle] = useState<Set<string>>(new Set());
+
+  // Fetch Memories
+  useEffect(() => {
+    const memoriesRef = ref(rtdb, 'memories');
+    return onValue(memoriesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.values(data) as Memory[];
+        setMemories(list);
+        setVisibilityToggle(new Set(list.map(m => m.id)));
+      } else {
+        setMemories(mockMemories);
+      }
+    });
+  }, []);
+
+  // Fetch Collections
+  useEffect(() => {
+    const collectionsRef = ref(rtdb, 'collections');
+    return onValue(collectionsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setCollections(Object.values(data) as MemoryCollection[]);
+      } else {
+        setCollections(mockCollections);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     if (!loading) {
       if (!user) {
@@ -32,19 +70,6 @@ export default function AdminDashboard() {
       }
     }
   }, [user, loading, router]);
-
-  const [memories, setMemories] = useState<Memory[]>(mockMemories);
-  const [collections, setCollections] = useState<MemoryCollection[]>(mockCollections);
-  const [showForm, setShowForm] = useState(false);
-  const [editingMemory, setEditingMemory] = useState<Memory | null>(null);
-  const [selectedMapMemory, setSelectedMapMemory] = useState<Memory | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showMapView, setShowMapView] = useState(false);
-  const [activeTab, setActiveTab] = useState<'memories' | 'users'>('memories');
-  const [userLogs, setUserLogs] = useState<any[]>([]);
-  const [visibilityToggle, setVisibilityToggle] = useState<Set<string>>(
-    new Set(memories.map((m) => m.id))
-  );
 
   useEffect(() => {
     if (user && user.email === 'shivarajmani2005@gmail.com') {
@@ -65,30 +90,42 @@ export default function AdminDashboard() {
       memory.location.country.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateMemory = (memory: Memory) => {
-    setMemories([...memories, memory]);
-    setShowForm(false);
+  const handleCreateMemory = async (memory: Memory) => {
+    try {
+      await set(ref(rtdb, `memories/${memory.id}`), memory);
+      setShowForm(false);
+    } catch (error) {
+      console.error("Error creating memory:", error);
+    }
   };
 
-  const handleUpdateMemory = (memory: Memory) => {
-    setMemories(memories.map((m) => (m.id === memory.id ? memory : m)));
-    setEditingMemory(null);
-    setShowForm(false);
+  const handleUpdateMemory = async (memory: Memory) => {
+    try {
+      await set(ref(rtdb, `memories/${memory.id}`), memory);
+      setEditingMemory(null);
+      setShowForm(false);
+    } catch (error) {
+      console.error("Error updating memory:", error);
+    }
   };
 
-  const handleDeleteMemory = (id: string) => {
+  const handleDeleteMemory = async (id: string) => {
     if (confirm('Are you sure you want to delete this memory?')) {
-      setMemories(memories.filter((m) => m.id !== id));
+      try {
+        await remove(ref(rtdb, `memories/${id}`));
+      } catch (error) {
+        console.error("Error deleting memory:", error);
+      }
     }
   };
 
-  const handleToggleVisibility = (id: string) => {
+  const handleToggleVisibility = async (id: string) => {
+    const isVisible = visibilityToggle.has(id);
+    // In a real app, you might have a 'published' field in the memory object
+    // For now, we'll just mock the toggle behavior locally or update the DB if field exists
     const newVisibility = new Set(visibilityToggle);
-    if (newVisibility.has(id)) {
-      newVisibility.delete(id);
-    } else {
-      newVisibility.add(id);
-    }
+    if (isVisible) newVisibility.delete(id);
+    else newVisibility.add(id);
     setVisibilityToggle(newVisibility);
   };
 
@@ -105,33 +142,46 @@ export default function AdminDashboard() {
     setEditingMemory(null);
   };
 
-  const handleAddToCollection = (memoryId: string, collectionId: string) => {
-    setCollections((prev) =>
-      prev.map((col) => {
-        if (col.id === collectionId) {
-          const memories = col.memories.includes(memoryId)
-            ? col.memories.filter((id) => id !== memoryId)
-            : [...col.memories, memoryId];
-          return { ...col, memories, updatedAt: new Date().toISOString() };
-        }
-        return col;
-      })
-    );
+  const handleAddToCollection = async (memoryId: string, collectionId: string) => {
+    const collection = collections.find(c => c.id === collectionId);
+    if (!collection) return;
+
+    const memoriesList = collection.memories.includes(memoryId)
+      ? collection.memories.filter((id) => id !== memoryId)
+      : [...collection.memories, memoryId];
+
+    try {
+      await update(ref(rtdb, `collections/${collectionId}`), {
+        memories: memoriesList,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error updating collection:", error);
+    }
   };
 
-  const handleCreateCollection = (collection: Omit<MemoryCollection, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleCreateCollection = async (collection: Omit<MemoryCollection, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const id = Date.now().toString();
     const newCollection: MemoryCollection = {
       ...collection,
-      id: Date.now().toString(),
+      id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setCollections([...collections, newCollection]);
+    try {
+      await set(ref(rtdb, `collections/${id}`), newCollection);
+    } catch (error) {
+      console.error("Error creating collection:", error);
+    }
   };
 
-  const handleDeleteCollection = (collectionId: string) => {
+  const handleDeleteCollection = async (collectionId: string) => {
     if (confirm('Delete this collection?')) {
-      setCollections((prev) => prev.filter((c) => c.id !== collectionId));
+      try {
+        await remove(ref(rtdb, `collections/${collectionId}`));
+      } catch (error) {
+        console.error("Error deleting collection:", error);
+      }
     }
   };
 
