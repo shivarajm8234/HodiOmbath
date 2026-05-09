@@ -7,7 +7,7 @@ import CollectionManager from '@/components/CollectionManager';
 import { Memory, MemoryCollection } from '@/lib/types';
 import { mockMemories, mockCollections } from '@/lib/mockData';
 import MemoryForm from '@/components/MemoryForm';
-import { Plus, Edit2, Trash2, Eye, EyeOff, MapPin, Map } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, MapPin, Map, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { rtdb } from '@/lib/firebase';
 import { ref, onValue } from 'firebase/database';
@@ -135,10 +135,38 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading || !user || user.email !== 'shivarajmani2005@gmail.com') {
+  if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!user || user.email !== 'shivarajmani2005@gmail.com') {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <Navigation />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="max-w-md w-full text-center space-y-6 p-8 bg-card rounded-2xl border border-border shadow-xl">
+            <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+              <Shield size={40} className="text-destructive" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground">Access Denied</h2>
+              <p className="text-muted-foreground text-sm">
+                You do not have the required permissions to access the Admin Dashboard. 
+                Please contact the administrator if you believe this is an error.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push('/')}
+              className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

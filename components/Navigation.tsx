@@ -24,7 +24,7 @@ export default function Navigation() {
 
   const navItems = [
     { label: 'Map', href: '/' },
-    { label: 'Admin', href: '/admin' },
+    ...(user?.email === 'shivarajmani2005@gmail.com' ? [{ label: 'Admin', href: '/admin' }] : []),
   ];
 
   const isActive = (href: string) => {
