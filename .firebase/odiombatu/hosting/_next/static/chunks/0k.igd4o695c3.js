@@ -1,0 +1,25 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,62573,e=>{"use strict";e.s(["MAP_CONFIG",0,{initialZoom:7,initialCenter:[15.3173,75.7139],minZoom:2,maxZoom:18},"MOOD_COLORS",0,{nostalgic:"#8B6F47",joyful:"#FFB347",peaceful:"#4CAF50",adventurous:"#FF6B6B",reflective:"#87CEEB"}])},31886,e=>{"use strict";var t=e.i(43476),a=e.i(70703),l=e.i(71645);let i=(0,e.i(75254).default)("satellite",[["path",{d:"m13.5 6.5-3.148-3.148a1.205 1.205 0 0 0-1.704 0L6.352 5.648a1.205 1.205 0 0 0 0 1.704L9.5 10.5",key:"dzhfyz"}],["path",{d:"M16.5 7.5 19 5",key:"1ltcjm"}],["path",{d:"m17.5 10.5 3.148 3.148a1.205 1.205 0 0 1 0 1.704l-2.296 2.296a1.205 1.205 0 0 1-1.704 0L13.5 14.5",key:"nfoymv"}],["path",{d:"M9 21a6 6 0 0 0-6-6",key:"1iajcf"}],["path",{d:"M9.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l4.296-4.296a1.205 1.205 0 0 0 0-1.704l-2.296-2.296a1.205 1.205 0 0 0-1.704 0z",key:"nv9zqy"}]]);var o=e.i(46932),s=e.i(32322),r=e.i(62573);let n=(0,a.default)(()=>e.A(52169).then(e=>e.MapContainer),{loadableGenerated:{modules:[94970]},ssr:!1,loading:()=>(0,t.jsx)("div",{className:"w-full h-full bg-muted animate-pulse flex items-center justify-center",children:(0,t.jsx)("div",{className:"text-muted-foreground",children:"Loading map..."})})}),d=(0,a.default)(()=>e.A(52169).then(e=>e.TileLayer),{loadableGenerated:{modules:[94970]},ssr:!1}),c=(0,a.default)(()=>e.A(52169).then(e=>e.Marker),{loadableGenerated:{modules:[94970]},ssr:!1});(0,a.default)(()=>e.A(52169).then(e=>e.Popup),{loadableGenerated:{modules:[94970]},ssr:!1}),delete s.default.Icon.Default.prototype._getIconUrl,s.default.Icon.Default.mergeOptions({iconRetinaUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",iconUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",shadowUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png"}),e.s(["default",0,function({memories:e,onMemoryClick:a,selectedMemoryId:m}){let[u,p]=(0,l.useState)(!1),[h,g]=(0,l.useState)(!1);return((0,l.useEffect)(()=>{g(!0)},[]),h)?(0,t.jsxs)("div",{className:"relative w-full h-full bg-gradient-to-b from-cyan-50 to-blue-100",children:[(0,t.jsxs)(n,{center:r.MAP_CONFIG.initialCenter,zoom:r.MAP_CONFIG.initialZoom,style:{width:"100%",height:"100%"},minZoom:r.MAP_CONFIG.minZoom,maxZoom:r.MAP_CONFIG.maxZoom,children:[(0,t.jsx)(d,{url:u?"https://tile.opentopomap.org/{z}/{x}/{y}.png":"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",attribution:u?"© OpenTopoMap, © OpenStreetMap contributors":"© OpenStreetMap contributors"}),e.map(e=>{let l,i,o=e.coordinates;r.MOOD_COLORS[e.mood];let n=m===e.id;return(0,t.jsx)(c,{position:[o[1],o[0]],icon:(l=e.images&&e.images[0]?e.images[0]:"https://via.placeholder.com/150",i=r.MOOD_COLORS[e.mood]||"#94a3b8",s.default.divIcon({html:`
+        <div class="photo-bubble ${n?"selected":""}" style="
+          position: relative;
+          width: 50px;
+          height: 50px;
+          border-radius: 50% 50% 50% 0;
+          background-color: white;
+          border: 3px solid ${i};
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+          transform: rotate(-45deg) ${n?"scale(1.3)":"scale(1)"};
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          overflow: hidden;
+          cursor: pointer;
+        ">
+          <div style="
+            width: 100%;
+            height: 100%;
+            transform: rotate(45deg);
+            background-image: url('${l}');
+            background-size: cover;
+            background-position: center;
+          "></div>
+          ${n?`<div class="pulse-ring" style="border-color: ${i}"></div>`:""}
+        </div>
+      `,iconSize:[50,50],iconAnchor:[25,50],popupAnchor:[0,-50],className:"custom-photo-marker"})),eventHandlers:{click:()=>{console.log("[v0] Marker clicked:",e.title),a?.(e)}}},e.id)})]}),(0,t.jsxs)(o.motion.button,{onClick:()=>p(!u),className:"absolute top-4 right-4 bg-white/90 hover:bg-white backdrop-blur-sm rounded-lg p-3 shadow-lg transition-all flex items-center gap-2 z-[500]",whileHover:{scale:1.05},whileTap:{scale:.95},initial:{opacity:0,x:20},animate:{opacity:1,x:0},transition:{delay:.3},children:[(0,t.jsx)(i,{size:20,className:"text-primary"}),(0,t.jsx)("span",{className:"text-sm font-medium text-foreground hidden sm:inline",children:u?"Map":"Satellite"})]})]}):(0,t.jsx)("div",{className:"relative w-full h-full bg-muted animate-pulse flex items-center justify-center",children:(0,t.jsx)("div",{className:"text-muted-foreground",children:"Loading map..."})})}],31886)},98193,e=>{e.n(e.i(31886))},52169,e=>{e.v(t=>Promise.all(["static/chunks/150y6l9c_yikz.js"].map(t=>e.l(t))).then(()=>t(94970)))}]);

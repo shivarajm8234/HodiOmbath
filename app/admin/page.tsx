@@ -153,6 +153,56 @@ export default function AdminDashboard() {
     setVisibilityToggle(newVisibility);
   };
 
+  const handleFormSubmit = (memory: Memory) => {
+    if (editingMemory) {
+      handleUpdateMemory(memory);
+    } else {
+      handleCreateMemory(memory);
+    }
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setEditingMemory(null);
+  };
+
+  // Collection Handlers
+  const handleAddToCollection = async (memoryId: string, collectionId: string) => {
+    const collection = collections.find(c => c.id === collectionId);
+    if (!collection) return;
+    const memoriesList = collection.memories.includes(memoryId)
+      ? collection.memories.filter((id) => id !== memoryId)
+      : [...collection.memories, memoryId];
+    try {
+      await update(ref(rtdb, `collections/${collectionId}`), {
+        memories: memoriesList,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Collection update error:", error);
+    }
+  };
+
+  const handleCreateCollection = async (collection: Omit<MemoryCollection, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const id = Date.now().toString();
+    const newColl: MemoryCollection = { ...collection, id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    try {
+      await set(ref(rtdb, `collections/${id}`), newColl);
+    } catch (error) {
+      console.error("Collection create error:", error);
+    }
+  };
+
+  const handleDeleteCollection = async (collectionId: string) => {
+    if (confirm('Delete collection?')) {
+      try {
+        await remove(ref(rtdb, `collections/${collectionId}`));
+      } catch (error) {
+        console.error("Collection delete error:", error);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
